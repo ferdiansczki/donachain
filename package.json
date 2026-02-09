@@ -1,0 +1,27 @@
+{
+  "name": "donachain",
+  "version": "1.0.0",
+  "description": "Decentralized donation platform with blockchain transparency and NFT rewards",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "test": "hardhat test"
+  },
+  "keywords": [
+    "blockchain",
+    "donation",
+    "ethereum",
+    "nft",
+    "web3"
+  ],
+  "author": "Donachain Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
+    "dotenv": "^16.3.1"
+  }
+}

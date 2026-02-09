@@ -1,0 +1,820 @@
+/**
+ * @file style.css
+ * @description Custom styles untuk Donachain - White/Blue Theme
+ * 
+ * @author Donachain Team
+ */
+
+/* ============================================
+   ROOT VARIABLES - Variabel CSS
+   ============================================ */
+
+:root {
+  /* Primary Colors */
+  --color-primary: #467ac6;
+  --color-primary-dark: #3561a0;
+  --color-secondary: #3b82f6;
+
+  /* Status Colors */
+  --color-success: #3fbb52;
+  --color-danger: #ff3746;
+  --color-warning: #f59e0b;
+
+  /* Background Colors */
+  --bg-body: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f9fafb;
+  --bg-footer: #f9fafb;
+
+  /* Text Colors */
+  --text-main: #1f2122;
+  --text-muted: #4b5563;
+  --text-light: #9ca3af;
+
+  /* Borders & Shadows */
+  --border-color: #e5e7eb;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-primary: 0 4px 14px 0 rgba(70, 122, 198, 0.39);
+}
+
+/* ============================================
+   BASE STYLES - Style Dasar
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  background: var(--bg-body);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Removed previous ::before gradient background */
+
+/* ============================================
+   TYPOGRAPHY - Tipografi
+   ============================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+/* Gradient text replacement - solid color or specific gradient if needed */
+.gradient-text {
+  color: var(--color-primary);
+  background: none;
+  -webkit-text-fill-color: initial;
+  /* Optional: Subtle gradient for primary text if desired, otherwise solid */
+  /* background: linear-gradient(135deg, #467ac6 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent; */
+}
+
+/* ============================================
+   CARDS - Kartu
+   ============================================ */
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.glass-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   NAVBAR - Navigation Bar
+   ============================================ */
+
+.navbar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-link {
+  color: var(--text-muted);
+  transition: color 0.2s ease;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+}
+
+/* Active link indicator */
+.nav-link.active {
+  color: var(--color-primary);
+}
+
+.nav-link::after {
+  display: none;
+  /* Remove underline animation */
+}
+
+/* ============================================
+   BUTTONS - Tombol
+   ============================================ */
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(70, 122, 198, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--text-muted);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: var(--bg-input);
+  border-color: var(--text-muted);
+  color: var(--text-main);
+}
+
+#connect-wallet-btn {
+  background-color: #3fbb52;
+  box-shadow: 0 4px 14px 0 rgba(63, 187, 82, 0.39);
+}
+
+#connect-wallet-btn:hover {
+  background-color: #35a044;
+  box-shadow: 0 6px 20px rgba(63, 187, 82, 0.4);
+}
+
+/* ============================================
+   ANTI-FLICKER - Wallet State
+   ============================================ */
+html.wallet-connected #connect-wallet-btn {
+  display: none !important;
+}
+
+html.wallet-connected #wallet-info {
+  display: block !important;
+}
+
+/* ============================================
+   PROGRESS BAR - Bar Progress
+   ============================================ */
+
+.progress-bar {
+  background: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: var(--color-primary);
+  border-radius: 9999px;
+  transition: width 0.5s ease-out;
+}
+
+/* ============================================
+   TABLES - Tabel
+   ============================================ */
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  /* Changed for border radius support */
+  border-spacing: 0;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-input);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.data-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: #f3f4f6;
+}
+
+/* ============================================
+   FORMS - Form Input
+   ============================================ */
+
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  color: var(--text-main);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  background: #fff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(70, 122, 198, 0.15);
+}
+
+.form-input::placeholder {
+  color: var(--text-light);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* ============================================
+   DROPDOWN - Menu Dropdown
+   ============================================ */
+
+.dropdown-menu {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #eff6ff;
+  color: var(--color-primary);
+}
+
+/* ============================================
+   DONATION FEED - Live Feed Donasi
+   ============================================ */
+
+.donation-item {
+  animation: slideIn 0.3s ease-out;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.donation-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   HERO SECTION - Bagian Hero
+   ============================================ */
+
+.hero-section {
+  text-align: center;
+  padding: 3rem 1rem;
+  position: relative;
+  background: radial-gradient(circle at top center, #eff6ff 0%, #ffffff 70%);
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+}
+
+.hero-subtitle {
+  font-size: clamp(1.125rem, 2vw, 1.25rem);
+  color: var(--text-muted);
+  max-width: 650px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ============================================
+   STATS BOX - Kotak Statistik
+   ============================================ */
+
+.stats-box {
+  background: var(--color-primary);
+  color: white;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-primary);
+}
+
+.stats-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+
+.stats-box h3,
+.stats-box p {
+  color: white;
+}
+
+/* ============================================
+   LEADERBOARD - Papan Peringkat
+   ============================================ */
+
+.leaderboard-container {
+  background: #fff;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard-header {
+  background: #f9fafb;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+/* ============================================
+   SIDEBAR - Sidebar
+   ============================================ */
+
+.sidebar-card {
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: sticky;
+  top: 100px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   QUICK AMOUNT BUTTONS
+   ============================================ */
+
+.quick-amount-btn {
+  background: #eff6ff;
+  color: var(--color-primary);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-amount-btn:hover {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f4f6 0%, #e5e7eb 50%, #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 1rem;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .sidebar-card {
+    position: static;
+  }
+
+  .data-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Mobile Logo */
+  .navbar .h-10 {
+    height: 2rem;
+  }
+}
+
+/* ============================================
+   HAMBURGER MENU - Mobile Navigation
+   ============================================ */
+
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1001;
+}
+
+.hamburger-btn span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--text-main);
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn span:nth-child(1) {
+  margin-bottom: 6px;
+}
+
+.hamburger-btn span:nth-child(3) {
+  margin-top: 6px;
+}
+
+/* Hamburger animation when active */
+.hamburger-btn.active span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: -280px;
+  width: 280px;
+  height: 100%;
+  background: #fff;
+  z-index: 1000;
+  padding: 80px 1.5rem 2rem;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+
+.mobile-menu.active {
+  right: 0;
+}
+
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  border-radius: 0.75rem;
+  transition: all 0.2s ease;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-nav-link:hover {
+  background: #eff6ff;
+  color: var(--color-primary);
+}
+
+.mobile-nav-link.active {
+  background: #eff6ff;
+  color: var(--color-primary);
+}
+
+.mobile-nav-link i {
+  width: 20px;
+  text-align: center;
+}
+
+/* Show hamburger on mobile */
+@media (max-width: 767px) {
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .mobile-menu-overlay,
+  .mobile-menu {
+    display: block;
+  }
+
+  /* Mobile Wallet Button - Icon Only */
+  #wallet-info #wallet-btn {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    gap: 0;
+    justify-content: center;
+  }
+
+  #wallet-info #wallet-btn #wallet-address,
+  #wallet-info #wallet-btn .fa-chevron-down {
+    display: none;
+  }
+
+  #wallet-info #wallet-btn > div:first-child {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+.tab-btn {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--color-primary);
+  background: #f3f4f6;
+}
+
+.tab-btn.active {
+  background: #eff6ff;
+  color: var(--color-primary);
+  border: 1px solid #bfdbfe;
+  font-weight: 600;
+}
+
+/* Filter Buttons */
+.filter-tab-btn {
+  background: #f3f4f6;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.filter-tab-btn:hover {
+  background: #e5e7eb;
+  color: var(--text-main);
+}
+
+.filter-tab-btn.active {
+  background: #eff6ff;
+  color: var(--color-primary);
+  border-color: #bfdbfe;
+}
+
+/* NFT Cards */
+.nft-card-square {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  aspect-ratio: 1;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+  background: #fff;
+  border: 1px solid var(--border-color);
+}
+
+.nft-card-square:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+
+.nft-card-square img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nft-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  background: #467ac6;
+  z-index: 10;
+  opacity: 0;
+  transform: translateY(100%);
+  transition: all 0.3s ease;
+}
+
+.nft-card-square:hover .nft-overlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.nft-id-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.nft-tier-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 10;
+}
+
+.tier-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tier-bronze {
+  background: linear-gradient(135deg, #cd7f32, #a05a2c);
+}
+
+.tier-silver {
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+}
+
+.tier-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}

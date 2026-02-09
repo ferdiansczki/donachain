@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Detail kampanye donasi - Donachain">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Detail Kampanye - Donachain</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        blue: {
+                            400: '#467ac6',
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        yellow: {
+                            600: '#ffd941',
+                        },
+                        gray: {
+                            900: '#1f2122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        // Anti-flicker: Check wallet connection state immediately
+        if (localStorage.getItem('dona_wallet_connected') === 'true') {
+            document.documentElement.classList.add('wallet-connected');
+
+            // Render basic wallet info immediately if available
+            const storedAddress = localStorage.getItem('dona_wallet_address');
+            if (storedAddress) {
+                // Wait for DOM to be ready to insert address
+                document.addEventListener('DOMContentLoaded', () => {
+                    const addrEl = document.getElementById('wallet-address');
+                    if (addrEl) {
+                        // Format: 0x1234...5678
+                        const formatted = `${storedAddress.substring(0, 6)}...${storedAddress.substring(storedAddress.length - 4)}`;
+                        addrEl.textContent = formatted;
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+
+<body class="font-sans">
+    <!-- NAVBAR -->
+    <nav class="navbar px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="img/donachain.png" alt="Donachain" class="h-10">
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="index.html" class="nav-link font-medium">Beranda</a>
+                <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
+                <a href="leaderboard.html" class="nav-link font-medium">Leaderboard</a>
+                <a href="audit.html" class="nav-link font-medium">Transparansi</a>
+                <a href="about.html" class="nav-link font-medium">Tentang</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="connect-wallet-btn" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    <span class="hidden sm:inline">Connect Wallet</span>
+                </button>
+
+                <div id="wallet-info" class="hidden relative">
+                    <button id="wallet-btn"
+                        class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600 text-sm"></i>
+                        </div>
+                        <span id="wallet-address" class="font-mono text-sm text-gray-700"></span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+
+                    <div id="wallet-dropdown" class="hidden absolute right-0 top-full mt-2 dropdown-menu"
+                        style="min-width: 100%;">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle mr-2"></i> Profil Saya
+                        </a>
+                        <a id="admin-link" href="admin.html" class="dropdown-item hidden">
+                            <i class="fas fa-cog mr-2"></i> Admin Panel
+                        </a>
+                        <hr class="border-gray-200 my-1">
+                        <button id="disconnect-btn"
+                            class="dropdown-item w-full text-left text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hamburger Menu Button (Mobile Only) -->
+                <button id="hamburger-btn" class="hamburger-btn md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html" class="mobile-nav-link">
+            <i class="fas fa-home"></i> Beranda
+        </a>
+        <a href="campaigns.html" class="mobile-nav-link">
+            <i class="fas fa-bullhorn"></i> Kampanye
+        </a>
+        <a href="leaderboard.html" class="mobile-nav-link">
+            <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+        <a href="audit.html" class="mobile-nav-link">
+            <i class="fas fa-shield-halved"></i> Transparansi
+        </a>
+        <a href="about.html" class="mobile-nav-link">
+            <i class="fas fa-info-circle"></i> Tentang
+        </a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="py-8 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Back Button -->
+            <a href="campaigns.html"
+                class="inline-flex items-center gap-2 text-gray-500 hover:text-blue-500 mb-6 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                <span>Kembali ke Kampanye</span>
+            </a>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Campaign Detail - Left Section -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Campaign Image -->
+                    <div class="glass-card overflow-hidden">
+                        <img id="campaign-image" src="https://placehold.co/800x400/e5e7eb/4b5563?text=Campaign"
+                            alt="Campaign Image" class="w-full h-64 md:h-96 object-cover bg-gray-300">
+                    </div>
+
+                    <!-- Campaign Info -->
+                    <div class="glass-card p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <h1 id="campaign-title" class="text-2xl md:text-3xl font-bold text-gray-900">
+                                Loading...
+                            </h1>
+                            <div id="campaign-status"></div>
+                        </div>
+
+                        <!-- Deadline Info -->
+                        <div id="deadline-info"
+                            class="mb-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/30">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-clock text-orange-500"></i>
+                                <div>
+                                    <span class="text-orange-600 font-medium">Deadline: </span>
+                                    <span id="campaign-deadline" class="text-gray-900">-</span>
+                                    <span id="deadline-countdown" class="text-gray-500 text-sm ml-2"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress -->
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600">Progress Donasi</span>
+                                <span id="campaign-progress-text" class="text-blue-600 font-bold">0%</span>
+                            </div>
+                            <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                <div id="campaign-progress"
+                                    class="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                    style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between mt-2 text-sm">
+                                <span class="text-gray-900 font-medium">
+                                    Terkumpul: <span id="campaign-raised" class="text-blue-600">0 ETH</span>
+                                </span>
+                                <span class="text-gray-500">
+                                    Target: <span id="campaign-target">0 ETH</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">Deskripsi</h3>
+                            <p id="campaign-description" class="text-gray-600 leading-relaxed">
+                                Loading...
+                            </p>
+                        </div>
+
+                        <!-- Meta Info -->
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-calendar"></i>
+                                <span>Dibuat: <span id="campaign-date">-</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Navigation -->
+                    <div class="glass-card p-2">
+                        <div class="flex gap-2">
+                            <button id="tab-donations"
+                                class="tab-btn active flex-1 py-3 px-4 rounded-lg font-medium text-center transition-all">
+                                <i class="fas fa-heart mr-2"></i>Donasi
+                            </button>
+                            <button id="tab-audit"
+                                class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium text-center transition-all">
+                                <i class="fas fa-file-alt mr-2"></i>Audit
+                            </button>
+                            <button id="tab-voting"
+                                class="tab-btn flex-1 py-3 px-4 rounded-lg font-medium text-center transition-all">
+                                <i class="fas fa-rocket mr-2"></i>Voting
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Donations -->
+                    <div id="donations-tab-content" class="glass-card p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <span class="w-2 h-2 bg-green-500 rounded-full pulse"></span>
+                            Donasi Terbaru
+                        </h3>
+                        <div id="donation-feed" class="space-y-3 max-h-96 overflow-y-auto">
+                            <div class="text-center py-8 text-gray-500">
+                                Memuat donasi...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Audit (hidden by default) -->
+                    <div id="audit-tab-content" class="glass-card p-6 hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                            <i class="fas fa-file-alt text-blue-500"></i>
+                            Audit Kampanye
+                        </h3>
+                        <div id="campaign-audit-content">
+                            <!-- Audit stats -->
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
+                                    <div class="text-xl font-bold text-green-500" id="audit-total-in">0 ETH</div>
+                                    <div class="text-gray-600 text-sm">Dana Masuk</div>
+                                </div>
+                                <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
+                                    <div class="text-xl font-bold text-red-500" id="audit-total-out">0 ETH</div>
+                                    <div class="text-gray-600 text-sm">Dana Keluar</div>
+                                </div>
+                            </div>
+
+                            <!-- Sub-tabs for Masuk/Keluar -->
+                            <div class="flex gap-2 mb-4">
+                                <button id="audit-sub-tab-in"
+                                    class="filter-tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                    <i class="fas fa-arrow-down text-green-500 mr-1"></i> Dana Masuk
+                                </button>
+                                <button id="audit-sub-tab-out"
+                                    class="filter-tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                                    <i class="fas fa-arrow-up text-red-500 mr-1"></i> Dana Keluar
+                                </button>
+                            </div>
+
+                            <!-- Dana Masuk Table (3 terbaru) -->
+                            <div id="audit-incoming-content">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="text-gray-900 font-medium">3 Donasi Terbaru</h4>
+                                    <a id="view-all-incoming-link" href="#"
+                                        class="text-blue-500 hover:text-blue-600 text-sm">
+                                        Lihat Semua <i class="fas fa-arrow-right text-xs"></i>
+                                    </a>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tanggal</th>
+                                                <th>Donatur</th>
+                                                <th>Jumlah</th>
+                                                <th>Tx</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="campaign-donations-table">
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-gray-500 text-sm">
+                                                    Memuat...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Dana Keluar Table (3 terbaru) - hidden by default -->
+                            <div id="audit-outgoing-content" class="hidden">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="text-gray-900 font-medium">3 Pengeluaran Terbaru</h4>
+                                    <a id="view-all-outgoing-link" href="#"
+                                        class="text-blue-500 hover:text-blue-600 text-sm">
+                                        Lihat Semua <i class="fas fa-arrow-right text-xs"></i>
+                                    </a>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="data-table text-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tanggal</th>
+                                                <th>Deskripsi</th>
+                                                <th>Jumlah</th>
+                                                <th>Tx</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="campaign-expenses-table">
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4 text-gray-500 text-sm">
+                                                    Memuat...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Voting (hidden by default) -->
+                    <div id="voting-tab-content" class="glass-card p-4 hidden">
+                        <div class="text-center py-6">
+                            <div class="inline-block p-3 rounded-full bg-blue-50 mb-3">
+                                <i class="fas fa-rocket text-2xl text-blue-500"></i>
+                            </div>
+
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">
+                                Dukung Kampanye Ini
+                            </h3>
+                            <p class="text-gray-500 text-sm max-w-md mx-auto mb-6">
+                                Berikan dukungan Anda agar kampanye ini masuk ke jajaran <strong>Trending</strong> di
+                                Halaman Utama dan mendapatkan eksposur lebih besar.
+                            </p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 max-w-lg mx-auto">
+                                <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                    <div class="text-2xl font-bold text-blue-600" id="vote-count-ranking">-</div>
+                                    <div class="text-xs text-blue-600 font-medium uppercase mt-1">Ranking</div>
+                                </div>
+                                <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                    <div class="text-2xl font-bold text-blue-600" id="vote-count-total">-</div>
+                                    <div class="text-xs text-blue-600 font-medium uppercase mt-1">Total Vote</div>
+                                </div>
+                                <div class="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                                    <div class="text-2xl font-bold text-blue-600" id="vote-count-today">-</div>
+                                    <div class="text-xs text-blue-600 font-medium uppercase mt-1">Hari Ini</div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="vote-btn"
+                                class="btn-primary px-6 py-2 text-base mx-auto group bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-blue-200 shadow-lg hover:shadow-blue-300 transform transition-all hover:-translate-y-1">
+                                <i class="fas fa-fire mr-2 group-hover:animate-pulse"></i>
+                                Vote Kampanye Ini
+                            </button>
+
+                            <p class="text-gray-400 text-xs mt-3">
+                                <i class="fas fa-ticket-alt mr-1"></i>
+                                Kuota Vote Anda: <span id="vote-quota" class="font-bold text-blue-600">-</span>
+                            </p>
+                            <p class="text-gray-400 text-xs mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Setiap 1 NFT Donasi = 1 Hak Suara.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Donation Sidebar - Right Section -->
+                <div class="lg:col-span-1">
+                    <div class="sidebar-card sticky top-4">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6">
+                            <i class="fas fa-hand-holding-heart text-blue-500 mr-2"></i>
+                            Donasi Sekarang
+                        </h3>
+
+                        <form id="donate-form" class="space-y-4">
+                            <!-- Amount Input with Wallet Balance -->
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="form-label mb-0">Jumlah Donasi (ETH)</label>
+                                    <div id="wallet-balance-display"
+                                        class="flex items-center gap-1 text-gray-500 text-sm">
+                                        <i class="fas fa-wallet text-xs"></i>
+                                        <span id="wallet-balance-value">-</span>
+                                    </div>
+                                </div>
+                                <input type="number" id="donate-amount" class="form-input" placeholder="0.00"
+                                    step="0.001" min="0.001" required>
+                            </div>
+
+                            <!-- Quick Amount Buttons -->
+                            <div class="grid grid-cols-4 gap-2">
+                                <button type="button" class="quick-amount-btn" data-amount="0.01">0.01</button>
+                                <button type="button" class="quick-amount-btn" data-amount="0.05">0.05</button>
+                                <button type="button" class="quick-amount-btn" data-amount="0.1">0.1</button>
+                                <button type="button" class="quick-amount-btn" data-amount="0.5">0.5</button>
+                            </div>
+
+                            <!-- NFT Info -->
+                            <div class="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
+                                <div class="flex items-start gap-3">
+                                    <i class="fas fa-certificate text-yellow-500 mt-1"></i>
+                                    <div>
+                                        <p class="text-yellow-700 font-medium text-sm">Bonus NFT Sertifikat</p>
+                                        <p class="text-gray-600 text-xs mt-1">
+                                            Donasi minimal 0.01 ETH untuk mendapatkan NFT Impact Certificate sebagai
+                                            bukti kontribusi Anda.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <!-- Submit Button -->
+                            <button type="submit" id="donate-submit-btn"
+                                class="btn-primary w-full py-4 text-lg justify-center hover:opacity-90 transition-all"
+                                style="background-color: #3fbb52; border-color: #3fbb52;">
+                                <i class="fas fa-heart"></i>
+                                Kirim Donasi
+                            </button>
+
+                        </form>
+
+                        <!-- Expired Warning (hidden by default) -->
+                        <div id="expired-warning"
+                            class="hidden bg-gray-500/10 border border-gray-500/30 rounded-xl p-6 text-center mt-4">
+                            <i class="fas fa-check-circle text-gray-500 text-3xl mb-3"></i>
+                            <h4 class="text-gray-900 font-bold text-lg mb-1">Kampanye Selesai</h4>
+                            <p class="text-gray-500 text-sm">Terima kasih atas partisipasi Anda.</p>
+                        </div>
+
+                        <!-- Etherscan Link -->
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <a id="etherscan-contract-link-detail"
+                                href="https://sepolia.etherscan.io/address/0x6cE174d0c343cCbD0152A431645F9ec31aFA1BeF"
+                                target="_blank"
+                                class="flex items-center justify-center gap-2 text-gray-500 hover:text-blue-500 text-sm transition-colors">
+                                <i class="fas fa-shield-halved"></i>
+                                Lihat Smart Contract
+                                <i class="fas fa-external-link-alt text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 py-8 px-6 mt-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            © 2026 Donachain. Platform donasi transparan berbasis blockchain.
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

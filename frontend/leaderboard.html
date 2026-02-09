@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Leaderboard Donatur - Donachain">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Leaderboard - Donachain</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        blue: {
+                            400: '#467ac6',
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        yellow: {
+                            600: '#ffd941',
+                        },
+                        gray: {
+                            900: '#1f2122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        // Anti-flicker: Check wallet connection state immediately
+        if (localStorage.getItem('dona_wallet_connected') === 'true') {
+            document.documentElement.classList.add('wallet-connected');
+
+            // Render basic wallet info immediately if available
+            const storedAddress = localStorage.getItem('dona_wallet_address');
+            if (storedAddress) {
+                // Wait for DOM to be ready to insert address
+                document.addEventListener('DOMContentLoaded', () => {
+                    const addrEl = document.getElementById('wallet-address');
+                    if (addrEl) {
+                        // Format: 0x1234...5678
+                        const formatted = `${storedAddress.substring(0, 6)}...${storedAddress.substring(storedAddress.length - 4)}`;
+                        addrEl.textContent = formatted;
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+
+<body class="font-sans">
+    <!-- NAVBAR -->
+    <nav class="navbar px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="img/donachain.png" alt="Donachain" class="h-10">
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="index.html" class="nav-link font-medium">Beranda</a>
+                <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
+                <a href="leaderboard.html" class="nav-link font-medium text-blue-600">Leaderboard</a>
+                <a href="audit.html" class="nav-link font-medium">Transparansi</a>
+                <a href="about.html" class="nav-link font-medium">Tentang</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="connect-wallet-btn" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    <span class="hidden sm:inline">Connect Wallet</span>
+                </button>
+
+                <div id="wallet-info" class="hidden relative">
+                    <button id="wallet-btn"
+                        class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600 text-sm"></i>
+                        </div>
+                        <span id="wallet-address" class="font-mono text-sm text-gray-700"></span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+
+                    <div id="wallet-dropdown" class="hidden absolute right-0 top-full mt-2 dropdown-menu"
+                        style="min-width: 100%;">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle mr-2"></i> Profil Saya
+                        </a>
+                        <a id="admin-link" href="admin.html" class="dropdown-item hidden">
+                            <i class="fas fa-cog mr-2"></i> Admin Panel
+                        </a>
+                        <hr class="border-gray-200 my-1">
+                        <button id="disconnect-btn"
+                            class="dropdown-item w-full text-left text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hamburger Menu Button (Mobile Only) -->
+                <button id="hamburger-btn" class="hamburger-btn md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html" class="mobile-nav-link">
+            <i class="fas fa-home"></i> Beranda
+        </a>
+        <a href="campaigns.html" class="mobile-nav-link">
+            <i class="fas fa-bullhorn"></i> Kampanye
+        </a>
+        <a href="leaderboard.html" class="mobile-nav-link active">
+            <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+        <a href="audit.html" class="mobile-nav-link">
+            <i class="fas fa-shield-halved"></i> Transparansi
+        </a>
+        <a href="about.html" class="mobile-nav-link">
+            <i class="fas fa-info-circle"></i> Tentang
+        </a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="py-8 px-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-trophy text-yellow-600 mr-3"></i>
+                    Leaderboard Donatur
+                </h1>
+                <p class="text-gray-600">
+                    Daftar donatur dengan kontribusi terbesar dalam mendukung berbagai kampanye donasi.
+                </p>
+            </div>
+
+            <!-- Your Position Card (shown when logged in and not in top 10) -->
+            <div id="your-position-card" class="hidden glass-card p-6 mb-6 border-2 border-blue-500/30 bg-blue-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                            <span id="your-rank">#?</span>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-sm">Posisi Anda</p>
+                            <p id="your-address" class="text-gray-900 font-mono">0x...</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-600 text-sm">Total Donasi</p>
+                        <p id="your-total" class="text-xl font-bold text-blue-600">0 ETH</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Table -->
+            <div class="glass-card overflow-hidden">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-bold text-gray-900">Top Donatur</h2>
+                        <div class="text-gray-600 text-sm">
+                            Halaman <span id="current-page">1</span> dari <span id="total-pages">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="w-16 text-center">Rank</th>
+                                <th>Donatur</th>
+                                <th class="text-right">Total Donasi</th>
+                                <th class="text-center w-24">Jumlah Tx</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-table">
+                            <tr>
+                                <td colspan="4" class="text-center py-12 text-gray-500">
+                                    <div
+                                        class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-2">
+                                    </div>
+                                    <p>Memuat leaderboard...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="p-4 border-t border-gray-200 flex items-center justify-between">
+                    <button id="prev-page" class="btn-secondary disabled:opacity-50" disabled>
+                        <i class="fas fa-chevron-left mr-2"></i> Sebelumnya
+                    </button>
+                    <div id="page-info" class="text-gray-600 text-sm">
+                        Menampilkan <span id="showing-start">1</span>-<span id="showing-end">10</span> dari <span
+                            id="total-donors">0</span> donatur
+                    </div>
+                    <button id="next-page" class="btn-secondary disabled:opacity-50" disabled>
+                        Selanjutnya <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 py-8 px-6 mt-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            © 2026 Donachain. Platform donasi transparan berbasis blockchain.
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/config.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

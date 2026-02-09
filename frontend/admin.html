@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Panel Admin - Donachain">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Admin Panel - Donachain</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        blue: {
+                            400: '#467ac6',
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        yellow: {
+                            600: '#ffd941',
+                        },
+                        gray: {
+                            900: '#1f2122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        // Anti-flicker: Check wallet connection state immediately
+        if (localStorage.getItem('dona_wallet_connected') === 'true') {
+            document.documentElement.classList.add('wallet-connected');
+
+            // Render basic wallet info immediately if available
+            const storedAddress = localStorage.getItem('dona_wallet_address');
+            if (storedAddress) {
+                // Wait for DOM to be ready to insert address
+                document.addEventListener('DOMContentLoaded', () => {
+                    const addrEl = document.getElementById('wallet-address');
+                    if (addrEl) {
+                        // Format: 0x1234...5678
+                        const formatted = `${storedAddress.substring(0, 6)}...${storedAddress.substring(storedAddress.length - 4)}`;
+                        addrEl.textContent = formatted;
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+
+<body class="font-sans">
+    <!-- NAVBAR -->
+    <nav class="navbar px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="img/donachain.png" alt="Donachain" class="h-10">
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="index.html" class="nav-link font-medium">Beranda</a>
+                <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
+                <a href="leaderboard.html" class="nav-link font-medium">Leaderboard</a>
+                <a href="audit.html" class="nav-link font-medium">Transparansi</a>
+                <a href="about.html" class="nav-link font-medium">Tentang</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="connect-wallet-btn" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    <span class="hidden sm:inline">Connect Wallet</span>
+                </button>
+
+                <div id="wallet-info" class="hidden relative">
+                    <button id="wallet-btn"
+                        class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600 text-sm"></i>
+                        </div>
+                        <span id="wallet-address" class="font-mono text-sm text-gray-700"></span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+
+                    <div id="wallet-dropdown" class="hidden absolute right-0 top-full mt-2 dropdown-menu"
+                        style="min-width: 100%;">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle mr-2"></i> Profil Saya
+                        </a>
+                        <a id="admin-link" href="admin.html" class="dropdown-item bg-blue-50">
+                            <i class="fas fa-cog mr-2"></i> Admin Panel
+                        </a>
+                        <hr class="border-gray-200 my-1">
+                        <button id="disconnect-btn"
+                            class="dropdown-item w-full text-left text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hamburger Menu Button (Mobile Only) -->
+                <button id="hamburger-btn" class="hamburger-btn md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html" class="mobile-nav-link">
+            <i class="fas fa-home"></i> Beranda
+        </a>
+        <a href="campaigns.html" class="mobile-nav-link">
+            <i class="fas fa-bullhorn"></i> Kampanye
+        </a>
+        <a href="leaderboard.html" class="mobile-nav-link">
+            <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+        <a href="audit.html" class="mobile-nav-link">
+            <i class="fas fa-shield-halved"></i> Transparansi
+        </a>
+        <a href="about.html" class="mobile-nav-link">
+            <i class="fas fa-info-circle"></i> Tentang
+        </a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content" class="py-8 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-cog text-blue-500 mr-3"></i>
+                    Admin Panel
+                </h1>
+                <p class="text-gray-600">
+                    Kelola kampanye donasi dan tarik dana dengan catatan pengeluaran.
+                </p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card p-5 text-center">
+                    <div class="text-2xl font-bold text-green-400" id="total-received">0.0000 ETH</div>
+                    <div class="text-gray-600 text-sm">Dana Masuk</div>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <div class="text-2xl font-bold text-red-400" id="total-spent">0.0000 ETH</div>
+                    <div class="text-gray-600 text-sm">Dana Keluar</div>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <div class="text-2xl font-bold text-blue-400" id="contract-balance">0.0000 ETH</div>
+                    <div class="text-gray-600 text-sm">Saldo Kontrak</div>
+                </div>
+                <div class="glass-card p-5 text-center">
+                    <div class="text-2xl font-bold text-blue-500" id="total-donations-count">0</div>
+                    <div class="text-gray-600 text-sm">Total Donasi</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Create Campaign Form -->
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <i class="fas fa-plus-circle text-green-500"></i>
+                        Buat Kampanye Baru
+                    </h2>
+
+                    <form id="create-campaign-form" class="space-y-4">
+                        <div>
+                            <label class="form-label">Judul Kampanye</label>
+                            <input type="text" id="campaign-title-input" class="form-input"
+                                placeholder="Contoh: Bantu Korban Bencana" required maxlength="100">
+                        </div>
+
+                        <div>
+                            <label class="form-label">Deskripsi</label>
+                            <textarea id="campaign-description-input" class="form-input form-textarea"
+                                placeholder="Jelaskan tujuan dan detail kampanye..." required></textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Gambar Kampanye</label>
+                            <input type="file" id="campaign-image-file" class="form-input" accept="image/*">
+                            <p class="text-gray-500 text-xs mt-1">
+                                Upload gambar (JPG/PNG). Gambar akan disimpan di IPFS.
+                            </p>
+
+                            <!-- Preview Container -->
+                            <div id="image-preview-container" class="mt-3 hidden">
+                                <p class="text-sm text-gray-600 mb-1">Preview:</p>
+                                <img id="image-preview" src="" alt="Preview"
+                                    class="h-40 w-full object-cover rounded-lg border border-gray-200">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Target Dana (ETH)</label>
+                                <input type="number" id="campaign-target-input" class="form-input" placeholder="1.0"
+                                    step="0.01" min="0.01" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Deadline</label>
+                                <input type="datetime-local" id="campaign-deadline-input" class="form-input" required>
+                                <p class="text-gray-500 text-xs mt-1">Batas waktu kampanye</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full py-3 justify-center"
+                            style="background-color: #3fbb52; border-color: #3fbb52;">
+                            <i class="fas fa-plus"></i>
+                            Buat Kampanye
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Withdraw With Log Form (MERGED) -->
+                <div class="glass-card p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                        <i class="fas fa-money-bill-wave" style="color: #ff3746;"></i>
+                        Tarik Dana
+                    </h2>
+
+                    <form id="withdraw-form" class="space-y-4">
+                        <div>
+                            <label class="form-label">Deskripsi Pengeluaran</label>
+                            <input type="text" id="withdraw-description" class="form-input"
+                                placeholder="Contoh: Pembelian selimut untuk korban" required>
+                            <p class="text-gray-500 text-xs mt-1">
+                                Deskripsi ini akan tercatat untuk transparansi
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Alamat Penerima</label>
+                            <input type="text" id="withdraw-recipient" class="form-input font-mono" placeholder="0x..."
+                                required>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Jumlah (ETH)</label>
+                                <input type="number" id="withdraw-amount" class="form-input" placeholder="0.5"
+                                    step="0.001" min="0.001" required>
+                            </div>
+                            <div>
+                                <label class="form-label">Kampanye</label>
+                                <select id="withdraw-campaign-id" class="form-input" style="cursor: pointer;">
+                                    <option value="" disabled selected>-</option>
+                                    <option disabled>Loading campaigns...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full py-3 justify-center"
+                            style="background-color: #ff3746; border-color: #ff3746;">
+                            <i class="fas fa-paper-plane"></i>
+                            Tarik & Catat Pengeluaran
+                        </button>
+                    </form>
+
+                    <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-info-circle text-blue-500 mt-1"></i>
+                            <div class="text-sm">
+                                <p class="text-blue-600 font-medium">Info</p>
+                                <p class="text-gray-600">
+                                    Fungsi ini akan otomatis mencatat pengeluaran dan mentransfer dana ke penerima
+                                    dalam satu transaksi.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaign Management Table -->
+            <div class="glass-card">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900 flex items-center gap-3">
+                        <i class="fas fa-list text-blue-500"></i>
+                        Kelola Kampanye
+                    </h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Judul</th>
+                                <th>Progress</th>
+                                <th>Deadline</th>
+                                <th class="text-center">Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-campaign-table">
+                            <tr>
+                                <td colspan="6" class="text-center py-8 text-gray-500">
+                                    Memuat kampanye...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 py-8 px-6 mt-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            © 2026 Donachain. Platform donasi transparan berbasis blockchain.
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/ipfs.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>

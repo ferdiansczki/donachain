@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment variables (PENTING: jangan commit!)
+.env
+
+# Hardhat files
+cache/
+artifacts/
+typechain-types/
+
+# Coverage
+coverage/
+coverage.json
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

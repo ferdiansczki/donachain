@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Detail Transparansi - Donachain">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Detail Transparansi - Donachain</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="css/style.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        blue: {
+                            400: '#467ac6',
+                            500: '#467ac6',
+                            600: '#3561a0',
+                        },
+                        yellow: {
+                            600: '#ffd941',
+                        },
+                        gray: {
+                            900: '#1f2122',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        // Anti-flicker: Check wallet connection state immediately
+        if (localStorage.getItem('dona_wallet_connected') === 'true') {
+            document.documentElement.classList.add('wallet-connected');
+
+            // Render basic wallet info immediately if available
+            const storedAddress = localStorage.getItem('dona_wallet_address');
+            if (storedAddress) {
+                // Wait for DOM to be ready to insert address
+                document.addEventListener('DOMContentLoaded', () => {
+                    const addrEl = document.getElementById('wallet-address');
+                    if (addrEl) {
+                        // Format: 0x1234...5678
+                        const formatted = `${storedAddress.substring(0, 6)}...${storedAddress.substring(storedAddress.length - 4)}`;
+                        addrEl.textContent = formatted;
+                    }
+                });
+            }
+        }
+    </script>
+</head>
+
+<body class="font-sans">
+    <!-- NAVBAR -->
+    <nav class="navbar px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="img/donachain.png" alt="Donachain" class="h-10">
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="index.html" class="nav-link font-medium">Beranda</a>
+                <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
+                <a href="leaderboard.html" class="nav-link font-medium">Leaderboard</a>
+                <a href="audit.html" class="nav-link font-medium text-blue-600">Transparansi</a>
+                <a href="about.html" class="nav-link font-medium">Tentang</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="connect-wallet-btn" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    <span class="hidden sm:inline">Connect Wallet</span>
+                </button>
+
+                <div id="wallet-info" class="hidden relative">
+                    <button id="wallet-btn"
+                        class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600 text-sm"></i>
+                        </div>
+                        <span id="wallet-address" class="font-mono text-sm text-gray-700"></span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+
+                    <div id="wallet-dropdown" class="hidden absolute right-0 top-full mt-2 dropdown-menu"
+                        style="min-width: 100%;">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle mr-2"></i> Profil Saya
+                        </a>
+                        <a id="admin-link" href="admin.html" class="dropdown-item hidden">
+                            <i class="fas fa-cog mr-2"></i> Admin Panel
+                        </a>
+                        <hr class="border-gray-200 my-1">
+                        <button id="disconnect-btn"
+                            class="dropdown-item w-full text-left text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hamburger Menu Button (Mobile Only) -->
+                <button id="hamburger-btn" class="hamburger-btn md:hidden">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html" class="mobile-nav-link">
+            <i class="fas fa-home"></i> Beranda
+        </a>
+        <a href="campaigns.html" class="mobile-nav-link">
+            <i class="fas fa-bullhorn"></i> Kampanye
+        </a>
+        <a href="leaderboard.html" class="mobile-nav-link">
+            <i class="fas fa-trophy"></i> Leaderboard
+        </a>
+        <a href="audit.html" class="mobile-nav-link active">
+            <i class="fas fa-shield-halved"></i> Transparansi
+        </a>
+        <a href="about.html" class="mobile-nav-link">
+            <i class="fas fa-info-circle"></i> Tentang
+        </a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="py-8 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- Back Button -->
+            <a href="audit.html"
+                class="inline-flex items-center gap-2 text-gray-500 hover:text-blue-500 mb-6 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                <span>Kembali ke Ringkasan</span>
+            </a>
+
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-list-alt text-blue-500 mr-3"></i>
+                    Detail Transparansi
+                </h1>
+                <p class="text-gray-600">
+                    Lihat semua transaksi dengan filter dan pencarian
+                </p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass-card p-4 text-center">
+                    <div class="text-xl font-bold text-green-500" id="total-received">0 ETH</div>
+                    <div class="text-gray-600 text-xs">Total Dana Masuk</div>
+                </div>
+                <div class="glass-card p-4 text-center">
+                    <div class="text-xl font-bold text-red-500" id="total-spent">0 ETH</div>
+                    <div class="text-gray-600 text-xs">Total Dana Keluar</div>
+                </div>
+                <div class="glass-card p-4 text-center">
+                    <div class="text-xl font-bold text-blue-500" id="contract-balance">0 ETH</div>
+                    <div class="text-gray-600 text-xs">Saldo Kontrak</div>
+                </div>
+                <div class="glass-card p-4 text-center">
+                    <div class="text-xl font-bold text-blue-600" id="total-donations-count">0</div>
+                    <div class="text-gray-600 text-xs">Total Transaksi</div>
+                </div>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="glass-card p-4 mb-8">
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- Tab Buttons -->
+                    <div class="flex gap-2">
+                        <button id="filter-all"
+                            class="filter-tab-btn active px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            Semua
+                        </button>
+                        <button id="filter-incoming"
+                            class="filter-tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            <i class="fas fa-arrow-down text-green-500 mr-1"></i> Dana Masuk
+                        </button>
+                        <button id="filter-outgoing"
+                            class="filter-tab-btn px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                            <i class="fas fa-arrow-up text-red-500 mr-1"></i> Dana Keluar
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="relative">
+                            <input type="text" id="search-input" class="form-input pl-10"
+                                placeholder="Cari alamat atau deskripsi...">
+                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="flex items-center gap-2">
+                        <input type="date" id="date-from" class="form-input text-sm">
+                        <span class="text-gray-400">-</span>
+                        <input type="date" id="date-to" class="form-input text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="glass-card">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900">
+                        Riwayat Transaksi
+                    </h2>
+                    <p class="text-gray-600 text-sm mt-1" id="result-count">
+                        Menampilkan semua transaksi
+                    </p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tipe</th>
+                                <th>Tanggal</th>
+                                <th>Kampanye</th>
+                                <th>Detail</th>
+                                <th>Jumlah</th>
+                                <th>Alamat</th>
+                                <th>Tx Hash</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-transactions-table">
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-gray-500">
+                                    Memuat data...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 py-8 px-6 mt-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            © 2026 Donachain. Platform donasi transparan berbasis blockchain.
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
