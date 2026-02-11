@@ -48,29 +48,34 @@ async function initApp() {
     try {
         console.log('🚀 Initializing Donachain App...');
 
-        // EXPERIMENTAL: Optimistic UI Update untuk mencegah flickering
-        // Jika ada local storage flag, ubah UI seolah-olah sudah connect
-        // sebelum proses async connect yang sebenarnya berjalan
+        // EXPERIMENTAL: Optimistic UI Update
         if (localStorage.getItem('dona_wallet_connected') === 'true') {
             const connectBtn = document.getElementById('connect-wallet-btn');
             const walletInfo = document.getElementById('wallet-info');
-
             if (connectBtn && walletInfo) {
-                // Sembunyikan tombol connect
                 connectBtn.classList.add('hidden');
-                // Tampilkan wallet info tapi kosong/loading dulu agar layout stabil
                 walletInfo.classList.remove('hidden');
-                // Opsional: set text loading
                 const walletAddress = document.getElementById('wallet-address');
                 if (walletAddress) walletAddress.textContent = 'Menghubungkan...';
             }
+        }
+
+        // Tampilkan loading global jika ada
+        if (window.DonaUI && typeof window.DonaUI.showLoading === 'function') {
+            // Hanya tampilkan jika bukan di halaman index/home (karena ada hero section)
+            // atau buat loading yang non-intrusive (misal top bar progress)
+            // Untuk saat ini kita skip full blocking loading agar UX tidak terganggu
         }
 
         // Deteksi halaman
         detectCurrentPage();
 
         // Inisialisasi read contracts
-        await window.DonaContract.initReadContracts();
+        const contractsInitialized = await window.DonaContract.initReadContracts();
+        
+        if (!contractsInitialized) {
+            throw new Error('Gagal menginisialisasi koneksi blockchain');
+        }
 
         // Setup event listeners global
         setupGlobalEventListeners();
@@ -89,7 +94,19 @@ async function initApp() {
 
     } catch (error) {
         console.error('❌ Failed to initialize app:', error);
-        window.DonaUI.showToast('Gagal memuat aplikasi. Silakan refresh.', 'error');
+        
+        // Tampilkan error yang jelas ke user
+        Swal.fire({
+            icon: 'error',
+            title: 'Koneksi Bermasalah',
+            text: 'Gagal memuat data blockchain. Silakan periksa koneksi internet Anda dan refresh halaman.',
+            confirmButtonText: 'Refresh Halaman',
+            confirmButtonColor: '#467ac6'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.reload();
+            }
+        });
     }
 }
 
@@ -530,6 +547,13 @@ async function loadHomepageData() {
 
     } catch (error) {
         console.error('❌ Failed to load homepage data:', error);
+        if (window.DonaUI) {
+            window.DonaUI.showToast('Gagal memuat data beranda. Mencoba lagi...', 'warning');
+            // Auto retry once after 3 seconds?
+            setTimeout(() => {
+                if (!AppState.isInitialized) loadHomepageData();
+            }, 3000);
+        }
     }
 }
 

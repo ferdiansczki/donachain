@@ -25,7 +25,12 @@ const NETWORK_CONFIG = {
         symbol: 'ETH',
         decimals: 18
     },
-    rpcUrls: ['https://sepolia.infura.io/v3/a4817bd7a0b34023ae88f910f9683cd2'],
+    rpcUrls: [
+        'https://sepolia.infura.io/v3/a4817bd7a0b34023ae88f910f9683cd2', // Primary (Infura)
+        'https://rpc.sepolia.org',                 // Public 1
+        'https://1rpc.io/sepolia',                 // Public 2
+        'https://ethereum-sepolia-rpc.publicnode.com' // Public 3
+    ],
     blockExplorerUrls: ['https://sepolia.etherscan.io']
 };
 

@@ -50,10 +50,10 @@ async function initReadContracts() {
     try {
         const config = window.DonaConfig;
 
-        // Buat provider dari RPC publik
-        const provider = new ethers.JsonRpcProvider(
-            config.NETWORK_CONFIG.rpcUrls[0]
-        );
+        // Buat provider menggunakan FallbackProvider untuk redundansi
+        // Ini akan mencoba beberapa RPC jika salah satu gagal/rate limited
+        const providers = config.NETWORK_CONFIG.rpcUrls.map(url => new ethers.JsonRpcProvider(url));
+        const provider = new ethers.FallbackProvider(providers, 1);
 
         // Inisialisasi DonationManager (read only)
         donationManagerRead = new ethers.Contract(
@@ -465,27 +465,47 @@ async function getNFTsByOwner(address) {
         // Ambil token IDs
         const tokenIds = await nftContractRead.getTokensByDonor(address);
 
-        // Ambil detail untuk setiap token
-        const nfts = await Promise.all(
-            tokenIds.map(async (tokenId) => {
-                const detail = await nftContractRead.getDonationDetail(tokenId);
-                const tokenURI = await nftContractRead.tokenURI(tokenId);
+        // OPTIMISASI: Process secara sequential atau chunking untuk menghindari Rate Limit
+        // Jangan pakai Promise.all langsung untuk semua jika jumlahnya banyak
+        const nfts = [];
+        const CHUNK_SIZE = 3; // Batasi request paralel
+        
+        for (let i = 0; i < tokenIds.length; i += CHUNK_SIZE) {
+            const chunk = tokenIds.slice(i, i + CHUNK_SIZE);
+            const chunkResults = await Promise.all(
+                chunk.map(async (tokenId) => {
+                    try {
+                        const detail = await nftContractRead.getDonationDetail(tokenId);
+                        const tokenURI = await nftContractRead.tokenURI(tokenId);
 
-                return {
-                    tokenId: Number(tokenId),
-                    donor: detail.donor,
-                    amount: ethers.formatEther(detail.amount),
-                    amountWei: detail.amount.toString(),
-                    campaignId: Number(detail.campaignId),
-                    campaignTitle: detail.campaignTitle,
-                    timestamp: Number(detail.timestamp),
-                    date: new Date(Number(detail.timestamp) * 1000).toLocaleString('id-ID'),
-                    txHash: detail.txHash,
-                    tokenURI: tokenURI
-                };
-            })
-        );
-
+                        return {
+                            tokenId: Number(tokenId),
+                            donor: detail.donor,
+                            amount: ethers.formatEther(detail.amount),
+                            amountWei: detail.amount.toString(),
+                            campaignId: Number(detail.campaignId),
+                            campaignTitle: detail.campaignTitle,
+                            timestamp: Number(detail.timestamp),
+                            date: new Date(Number(detail.timestamp) * 1000).toLocaleString('id-ID'),
+                            txHash: detail.txHash,
+                            tokenURI: tokenURI
+                        };
+                    } catch (e) {
+                        console.warn(`Gagal fetch NFT #${tokenId}:`, e);
+                        return null;
+                    }
+                })
+            );
+            
+            // Filter null results (failed fetches)
+            nfts.push(...chunkResults.filter(r => r !== null));
+            
+            // Optional: Small delay between chunks agar ramah ke RPC
+            if (i + CHUNK_SIZE < tokenIds.length) {
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+        
         return nfts;
 
     } catch (error) {
