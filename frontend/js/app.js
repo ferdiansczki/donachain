@@ -98,35 +98,58 @@ async function initApp() {
  */
 function detectCurrentPage() {
     const path = window.location.pathname;
-    const filename = path.split('/').pop() || 'index.html';
+    // Ambil bagian terakhir dari URL
+    // Contoh: /campaigns.html -> campaigns.html
+    // Contoh: /campaigns -> campaigns
+    let filename = path.split('/').pop();
 
-    if (filename === '' || filename === 'index.html') {
+    // Hapus query string jika ada (antisipasi jika ada di pathname)
+    filename = filename.split('?')[0];
+
+    // Jika kosong atau index variants, set ke home
+    if (filename === '' || filename === 'index.html' || filename === 'index') {
         AppState.currentPage = 'home';
-    } else if (filename === 'detail.html') {
+    } 
+    // Handle detail page (with or without .html)
+    else if (filename === 'detail.html' || filename === 'detail') {
         AppState.currentPage = 'detail';
         // Ambil campaign ID dari URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         AppState.currentCampaignId = parseInt(urlParams.get('id')) || null;
-    } else if (filename === 'campaigns.html') {
+    } 
+    // Handle campaigns page
+    else if (filename === 'campaigns.html' || filename === 'campaigns') {
         AppState.currentPage = 'campaigns';
-    } else if (filename === 'audit.html') {
+    } 
+    // Handle audit page
+    else if (filename === 'audit.html' || filename === 'audit') {
         AppState.currentPage = 'audit';
-    } else if (filename === 'audit-detail.html') {
+    } 
+    // Handle audit-detail page
+    else if (filename === 'audit-detail.html' || filename === 'audit-detail') {
         AppState.currentPage = 'audit-detail';
         // Ambil tab dari URL parameter
         const urlParams = new URLSearchParams(window.location.search);
         AppState.currentTab = urlParams.get('tab') || 'all';
-    } else if (filename === 'profile.html') {
+    } 
+    // Handle profile page
+    else if (filename === 'profile.html' || filename === 'profile') {
         AppState.currentPage = 'profile';
-    } else if (filename === 'admin.html') {
+    } 
+    // Handle admin page
+    else if (filename === 'admin.html' || filename === 'admin') {
         AppState.currentPage = 'admin';
-    } else if (filename === 'leaderboard.html') {
+    } 
+    // Handle leaderboard page
+    else if (filename === 'leaderboard.html' || filename === 'leaderboard') {
         AppState.currentPage = 'leaderboard';
-    } else if (filename === 'about.html') {
+    } 
+    // Handle about page
+    else if (filename === 'about.html' || filename === 'about') {
         AppState.currentPage = 'about';
     }
 
-    console.log('📍 Current page:', AppState.currentPage);
+    console.log('📍 Current page detected:', AppState.currentPage, '(Filename:', filename, ')');
 }
 
 /**
