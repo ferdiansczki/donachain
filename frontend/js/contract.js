@@ -47,42 +47,50 @@ let votingContractWrite = null;
  * Ini untuk menampilkan data kampanye, donasi, dll.
  */
 async function initReadContracts() {
-    try {
-        const config = window.DonaConfig;
+    const config = window.DonaConfig;
+    const rpcUrls = config.NETWORK_CONFIG.rpcUrls;
 
-        // Buat provider menggunakan FallbackProvider untuk redundansi
-        // Ini akan mencoba beberapa RPC jika salah satu gagal/rate limited
-        const providers = config.NETWORK_CONFIG.rpcUrls.map(url => new ethers.JsonRpcProvider(url));
-        const provider = new ethers.FallbackProvider(providers, 1);
+    // Coba setiap RPC URL satu per satu sampai ada yang berhasil
+    for (let i = 0; i < rpcUrls.length; i++) {
+        try {
+            console.log(`🔗 Mencoba RPC ${i + 1}/${rpcUrls.length}: ${rpcUrls[i].substring(0, 40)}...`);
 
-        // Inisialisasi DonationManager (read only)
-        donationManagerRead = new ethers.Contract(
-            config.DONATION_MANAGER_ADDRESS,
-            config.DONATION_MANAGER_ABI,
-            provider
-        );
+            const provider = new ethers.JsonRpcProvider(rpcUrls[i]);
 
-        // Inisialisasi NFT Contract (read only)
-        nftContractRead = new ethers.Contract(
-            config.NFT_ADDRESS,
-            config.NFT_ABI,
-            provider
-        );
+            // Test koneksi dengan request ringan (getBlockNumber)
+            await provider.getBlockNumber();
 
-        // Inisialisasi Voting Contract (read only)
-        votingContractRead = new ethers.Contract(
-            config.VOTING_ADDRESS,
-            config.VOTING_ABI,
-            provider
-        );
+            // Jika berhasil, inisialisasi semua kontrak dengan provider ini
+            donationManagerRead = new ethers.Contract(
+                config.DONATION_MANAGER_ADDRESS,
+                config.DONATION_MANAGER_ABI,
+                provider
+            );
 
-        console.log('✅ Read contracts initialized');
-        return true;
+            nftContractRead = new ethers.Contract(
+                config.NFT_ADDRESS,
+                config.NFT_ABI,
+                provider
+            );
 
-    } catch (error) {
-        console.error('❌ Gagal inisialisasi read contracts:', error);
-        return false;
+            votingContractRead = new ethers.Contract(
+                config.VOTING_ADDRESS,
+                config.VOTING_ABI,
+                provider
+            );
+
+            console.log(`✅ Read contracts initialized (RPC ${i + 1})`);
+            return true;
+
+        } catch (error) {
+            console.warn(`⚠️ RPC ${i + 1} gagal: ${error.message}`);
+            // Lanjut ke RPC berikutnya
+        }
     }
+
+    // Semua RPC gagal
+    console.error('❌ Semua RPC gagal. Tidak bisa menginisialisasi read contracts.');
+    return false;
 }
 
 /**
