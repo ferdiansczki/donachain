@@ -39,9 +39,9 @@ const NETWORK_CONFIG = {
 // ============================================
 
 // PENTING: Update alamat ini setelah deploy kontrak baru!
-const DONATION_MANAGER_ADDRESS = '0x6cE174d0c343cCbD0152A431645F9ec31aFA1BeF'; // TODO: Update setelah deploy
-const NFT_ADDRESS = '0x18F2DaF080C9FeD516a1bAf2f44EC6dffe258100'; // TODO: Update setelah deploy
-const VOTING_ADDRESS = '0x0767723b505C88D4beF91106C1dB6bAd1b55aa8c'; // TODO: Update setelah deploy Voting.sol
+const DONATION_MANAGER_ADDRESS = '0xbacEEf7fAe3fa1896fB17FCd4251Baacd13f3200'; // TODO: Update setelah deploy
+const NFT_ADDRESS = '0xd75B9662422c3313189be64541150Fa9B3A95B19'; // TODO: Update setelah deploy
+const VOTING_ADDRESS = '0xa6076defe138ae50c2037554980d9a552e769a8f'; // TODO: Update setelah deploy Voting.sol
 const ADMIN_ADDRESS = '0xEaEdf9E1175E6CA7B7F400e3fAaC1D3dE2F7Fe0e';
 
 // ============================================
