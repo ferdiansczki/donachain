@@ -33,6 +33,7 @@ let nftContractRead = null;
 let nftContractWrite = null;
 let votingContractRead = null;
 let votingContractWrite = null;
+let currentRpcIndex = 0; // Melacak index RPC yang sedang digunakan
 
 // ============================================
 // INITIALIZATION - Inisialisasi
@@ -46,21 +47,21 @@ let votingContractWrite = null;
  * bisa digunakan bahkan tanpa koneksi wallet.
  * Ini untuk menampilkan data kampanye, donasi, dll.
  */
-async function initReadContracts() {
+async function initReadContracts(startIndex = 0) {
     const config = window.DonaConfig;
     const rpcUrls = config.NETWORK_CONFIG.rpcUrls;
 
-    // Coba setiap RPC URL satu per satu sampai ada yang berhasil
+    // Coba setiap RPC URL satu per satu
     for (let i = 0; i < rpcUrls.length; i++) {
+        const index = (startIndex + i) % rpcUrls.length;
         try {
-            console.log(`🔗 Mencoba RPC ${i + 1}/${rpcUrls.length}: ${rpcUrls[i].substring(0, 40)}...`);
+            console.log(`🔗 Mencoba RPC ${index + 1}/${rpcUrls.length}: ${rpcUrls[index].substring(0, 40)}...`);
 
-            const provider = new ethers.JsonRpcProvider(rpcUrls[i]);
+            const provider = new ethers.JsonRpcProvider(rpcUrls[index]);
 
-            // Test koneksi dengan request ringan (getBlockNumber)
+            // Test koneksi dengan request ringan
             await provider.getBlockNumber();
 
-            // Jika berhasil, inisialisasi semua kontrak dengan provider ini
             donationManagerRead = new ethers.Contract(
                 config.DONATION_MANAGER_ADDRESS,
                 config.DONATION_MANAGER_ABI,
@@ -79,18 +80,68 @@ async function initReadContracts() {
                 provider
             );
 
-            console.log(`✅ Read contracts initialized (RPC ${i + 1})`);
+            currentRpcIndex = index;
+            console.log(`✅ Read contracts initialized (RPC ${index + 1})`);
             return true;
 
         } catch (error) {
-            console.warn(`⚠️ RPC ${i + 1} gagal: ${error.message}`);
-            // Lanjut ke RPC berikutnya
+            console.warn(`⚠️ RPC ${index + 1} gagal: ${error.message}`);
         }
     }
 
-    // Semua RPC gagal
-    console.error('❌ Semua RPC gagal. Tidak bisa menginisialisasi read contracts.');
+    console.error('❌ Semua RPC gagal.');
     return false;
+}
+
+/**
+ * Rotasi ke RPC berikutnya jika terjadi error
+ */
+async function rotateRpc() {
+    console.log('🔄 Mendeteksi masalah koneksi, merotasi RPC...');
+    const nextIndex = (currentRpcIndex + 1) % window.DonaConfig.NETWORK_CONFIG.rpcUrls.length;
+    donationManagerRead = null; // Reset agar ensureReadContract memanggil init lagi
+    return await initReadContracts(nextIndex);
+}
+
+/**
+ * Pembungkus fungsi baca dengan mekanisme retry dan rotasi otomatis
+ */
+async function readCallWithRetry(fnName, ...args) {
+    const maxAttempts = 3; // Maksimal 3 kali rotasi
+    let lastError = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            await ensureReadContract();
+            
+            // Dapatkan function dari instance (misal donationManagerRead['getAllCampaigns'])
+            if (donationManagerRead && typeof donationManagerRead[fnName] === 'function') {
+                return await donationManagerRead[fnName](...args);
+            } else if (nftContractRead && typeof nftContractRead[fnName] === 'function') {
+                return await nftContractRead[fnName](...args);
+            } else if (votingContractRead && typeof votingContractRead[fnName] === 'function') {
+                return await votingContractRead[fnName](...args);
+            }
+            
+            throw new Error(`Fungsi ${fnName} tidak ditemukan di kontrak manapun`);
+            
+        } catch (error) {
+            lastError = error;
+            const msg = error.message.toLowerCase();
+            
+            // Cek jika error karena rate limit atau koneksi
+            if (msg.includes('too many requests') || msg.includes('429') || msg.includes('timeout') || msg.includes('missing response')) {
+                console.warn(`⚠️ Percobaan ${attempt + 1} gagal (${fnName}): Rate limit tercapai. Mencoba rotasi RPC...`);
+                await rotateRpc();
+                // Tunggu sebentar sebelum mencoba lagi
+                await new Promise(r => setTimeout(r, 500));
+            } else {
+                // Jika error logika kontrak, jangan retry
+                throw error;
+            }
+        }
+    }
+    throw lastError;
 }
 
 /**
@@ -161,13 +212,8 @@ async function initWriteContracts() {
  */
 async function getCampaigns() {
     try {
-        await ensureReadContract();
-
-        const campaigns = await donationManagerRead.getAllCampaigns();
-
-        // Format data untuk frontend
+        const campaigns = await readCallWithRetry('getAllCampaigns');
         return campaigns.map(formatCampaign);
-
     } catch (error) {
         console.error('❌ Gagal mengambil kampanye:', error);
         throw error;
@@ -181,11 +227,8 @@ async function getCampaigns() {
  */
 async function getActiveCampaigns() {
     try {
-        await ensureReadContract();
-
-        const campaigns = await donationManagerRead.getActiveCampaigns();
+        const campaigns = await readCallWithRetry('getActiveCampaigns');
         return campaigns.map(formatCampaign);
-
     } catch (error) {
         console.error('❌ Gagal mengambil kampanye aktif:', error);
         throw error;
@@ -200,11 +243,8 @@ async function getActiveCampaigns() {
  */
 async function getCampaignById(campaignId) {
     try {
-        await ensureReadContract();
-
-        const campaign = await donationManagerRead.getCampaign(campaignId);
+        const campaign = await readCallWithRetry('getCampaign', campaignId);
         return formatCampaign(campaign);
-
     } catch (error) {
         console.error('❌ Gagal mengambil kampanye:', error);
         throw error;
@@ -222,11 +262,10 @@ async function getCampaignById(campaignId) {
  */
 async function getAllDonations() {
     try {
-        await ensureReadContract();
-
-        const donations = await donationManagerRead.getAllDonations();
-
-        // Ambil event logs untuk mendapatkan txHash asli
+        const donations = await readCallWithRetry('getAllDonations');
+        
+        // Untuk queryFilter, kita tidak bisa masukkan ke readCallWithRetry secara langsung 
+        // karena itu method filter. Jadi kita gunakan donationManagerRead yang sudah di-init
         const filter = donationManagerRead.filters.DonationReceived();
         const events = await donationManagerRead.queryFilter(filter);
 
@@ -264,13 +303,11 @@ async function getAllDonations() {
  */
 async function getDonationsForCampaign(campaignId) {
     try {
-        await ensureReadContract();
-
-        const donations = await donationManagerRead.getDonationsForCampaign(campaignId);
+        const donations = await readCallWithRetry('getDonationsForCampaign', campaignId);
 
         // Ambil event logs untuk txHash asli
         const filter = donationManagerRead.filters.DonationReceived();
-        const events = await donationManagerRead.queryFilter(filter);
+        const events = await readCallWithRetry('queryFilter', filter);
 
         const txHashMap = {};
         events.forEach(event => {
@@ -304,13 +341,11 @@ async function getDonationsForCampaign(campaignId) {
  */
 async function getDonationsByDonor(address) {
     try {
-        await ensureReadContract();
-
-        const donations = await donationManagerRead.getDonationsByDonor(address);
+        const donations = await readCallWithRetry('getDonationsByDonor', address);
 
         // Ambil event logs untuk txHash asli
         const filter = donationManagerRead.filters.DonationReceived();
-        const events = await donationManagerRead.queryFilter(filter);
+        const events = await readCallWithRetry('queryFilter', filter);
 
         const txHashMap = {};
         events.forEach(event => {
@@ -343,23 +378,21 @@ async function getDonationsByDonor(address) {
  */
 async function getAllExpenses() {
     try {
-        await ensureReadContract();
+        const expenses = await readCallWithRetry('getAllExpenses');
 
-        const expenses = await donationManagerRead.getAllExpenses();
-
-        // Try to get real txHash from events, but don't fail if it doesn't work
+        // Mencoba ambil real txHash dari events
         let txHashMap = {};
         try {
             const filter = donationManagerRead.filters.FundsWithdrawnWithLog();
             if (filter) {
-                const events = await donationManagerRead.queryFilter(filter);
+                const events = await readCallWithRetry('queryFilter', filter);
                 events.forEach(event => {
                     const expenseId = Number(event.args[0]);
                     txHashMap[expenseId] = event.transactionHash;
                 });
             }
         } catch (eventError) {
-            console.warn('⚠️ Could not fetch FundsWithdrawnWithLog events, using stored txHash:', eventError.message);
+            console.warn('⚠️ Tidak bisa fetch FundsWithdrawnWithLog events:', eventError.message);
         }
 
         // Format expense dengan txHash dari event jika ada, atau dari storage
@@ -380,16 +413,14 @@ async function getAllExpenses() {
 }
 
 /**
- * Ambil leaderboard top donatur
+ * Ambil statistik donatur top donatur
  * 
  * @param {number} count - Jumlah top donatur (default: 5)
  * @returns {Promise<Array>} Array {address, amount} top donatur
  */
 async function getLeaderboard(count = 5) {
     try {
-        await ensureReadContract();
-
-        const [addresses, amounts] = await donationManagerRead.getLeaderboard(count);
+        const [addresses, amounts] = await readCallWithRetry('getLeaderboard', count);
 
         // Gabungkan addresses dan amounts
         const leaderboard = [];
@@ -398,8 +429,7 @@ async function getLeaderboard(count = 5) {
                 // Fetch tx count for this donor
                 let txCount = 0;
                 try {
-                    // We can use the contract function directly to get array length
-                    const donorDonations = await donationManagerRead.getDonationsByDonor(addresses[i]);
+                    const donorDonations = await readCallWithRetry('getDonationsByDonor', addresses[i]);
                     txCount = donorDonations.length;
                 } catch (e) {
                     console.warn(`Could not fetch tx count for ${addresses[i]}`, e);
@@ -418,7 +448,7 @@ async function getLeaderboard(count = 5) {
         return leaderboard;
 
     } catch (error) {
-        console.error('❌ Gagal mengambil leaderboard:', error);
+        console.error('❌ Gagal mengambil statistik donatur:', error);
         throw error;
     }
 }
@@ -430,9 +460,7 @@ async function getLeaderboard(count = 5) {
  */
 async function getStats() {
     try {
-        await ensureReadContract();
-
-        const stats = await donationManagerRead.getStats();
+        const stats = await readCallWithRetry('getStats');
 
         return {
             totalCampaigns: Number(stats.totalCampaigns),
@@ -468,23 +496,19 @@ async function getStats() {
  */
 async function getNFTsByOwner(address) {
     try {
-        await ensureReadContract();
-
-        // Ambil token IDs
-        const tokenIds = await nftContractRead.getTokensByDonor(address);
+        const tokenIds = await readCallWithRetry('getTokensByDonor', address);
 
         // OPTIMISASI: Process secara sequential atau chunking untuk menghindari Rate Limit
-        // Jangan pakai Promise.all langsung untuk semua jika jumlahnya banyak
         const nfts = [];
-        const CHUNK_SIZE = 3; // Batasi request paralel
+        const CHUNK_SIZE = 3; 
         
         for (let i = 0; i < tokenIds.length; i += CHUNK_SIZE) {
             const chunk = tokenIds.slice(i, i + CHUNK_SIZE);
             const chunkResults = await Promise.all(
                 chunk.map(async (tokenId) => {
                     try {
-                        const detail = await nftContractRead.getDonationDetail(tokenId);
-                        const tokenURI = await nftContractRead.tokenURI(tokenId);
+                        const detail = await readCallWithRetry('getDonationDetail', tokenId);
+                        const tokenURI = await readCallWithRetry('tokenURI', tokenId);
 
                         return {
                             tokenId: Number(tokenId),
@@ -529,11 +553,8 @@ async function getNFTsByOwner(address) {
  */
 async function getNFTTotalSupply() {
     try {
-        await ensureReadContract();
-
-        const totalSupply = await nftContractRead.totalSupply();
+        const totalSupply = await readCallWithRetry('totalSupply');
         return Number(totalSupply);
-
     } catch (error) {
         console.error('❌ Gagal mengambil total supply NFT:', error);
         throw error;
@@ -626,12 +647,11 @@ async function voteForCampaign(campaignId, tokenId) {
  */
 async function getCampaignVotes(campaignId) {
     try {
-        await ensureReadContract();
-        const votes = await votingContractRead.getVotes(campaignId);
+        const votes = await readCallWithRetry('getVotes', campaignId);
         return Number(votes);
     } catch (error) {
         console.error('❌ Gagal mengambil jumlah vote:', error);
-        return 0; // Return 0 if failed (or contract not deployed yet)
+        return 0; 
     }
 }
 
@@ -643,8 +663,7 @@ async function getCampaignVotes(campaignId) {
  */
 async function checkHasVoted(tokenId) {
     try {
-        await ensureReadContract();
-        const hasVoted = await votingContractRead.hasVoted(tokenId);
+        const hasVoted = await readCallWithRetry('hasVoted', tokenId);
         return hasVoted;
     } catch (error) {
         console.error('❌ Gagal cek status vote:', error);
@@ -660,47 +679,46 @@ async function checkHasVoted(tokenId) {
  */
 async function getVoteStats(campaignId) {
     try {
-        await ensureReadContract();
-
-        // 1. Get all votes for all campaigns to determine rank
-        // Note: In a real production app with many campaigns, this should be indexed off-chain.
-        // For now, we iterate through active campaigns.
-        const campaigns = await donationManagerRead.getActiveCampaigns();
+        // 1. Ambil semua vote untuk semua kampanye untuk menentukan ranking
+        const campaigns = await readCallWithRetry('getActiveCampaigns');
         const voteCounts = [];
 
-        for (const c of campaigns) {
+        // OPTIMISASI: Ambil vote secara paralel dengan retry
+        const votePromises = campaigns.map(async (c) => {
             const id = Number(c.id);
-            const votes = await votingContractRead.getVotes(id);
-            voteCounts.push({ id, votes: Number(votes) });
-        }
+            const votes = await readCallWithRetry('getVotes', id);
+            return { id, votes: Number(votes) };
+        });
 
-        // Sort by votes (descending)
+        const results = await Promise.all(votePromises);
+        voteCounts.push(...results);
+
+        // Urutkan berdasarkan vote terbanyak
         voteCounts.sort((a, b) => b.votes - a.votes);
 
-        // Find rank (1-based index)
+        // Cari ranking
         const rankIndex = voteCounts.findIndex(v => v.id === Number(campaignId));
         const ranking = rankIndex !== -1 ? rankIndex + 1 : '-';
 
-        // 2. Get today's votes from events
-        // Filter events for this campaign
+        // 2. Ambil vote hari ini dari events
         const filter = votingContractRead.filters.Voted(Number(campaignId));
-        const events = await votingContractRead.queryFilter(filter);
+        const events = await readCallWithRetry('queryFilter', filter);
 
         const now = Math.floor(Date.now() / 1000);
-        const startOfDay = now - (now % 86400); // Midnight UTC (simplification)
-
-        // We need block timestamps for events, but getting block for each event is heavy.
-        // Optimization: Assume events within last N blocks are today? No, imprecise.
-        // Better: Fetch block for each event? Yes, but limit to recent events.
+        const startOfDay = now - (now % 86400);
 
         let todayVotes = 0;
-        // Optimization: Only check last 100 events to save RPC calls
-        const recentEvents = events.slice(-100);
+        const recentEvents = events.slice(-50); // Batasi lebih ketat lagi untuk stabilitas
 
+        // Proses events secara sequential untuk menghindari flood request getBlock
         for (const event of recentEvents) {
-            const block = await event.getBlock();
-            if (block.timestamp >= startOfDay) {
-                todayVotes++;
+            try {
+                const block = await event.getBlock();
+                if (block.timestamp >= startOfDay) {
+                    todayVotes++;
+                }
+            } catch (blockErr) {
+                console.warn('Gagal fetch event block:', blockErr);
             }
         }
 

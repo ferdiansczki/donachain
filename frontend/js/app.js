@@ -862,6 +862,13 @@ async function loadAuditPageData() {
  */
 async function loadAuditDetailPageData() {
     try {
+        console.log('🔄 Loading audit detail data...');
+        
+        // Tampilkan loading state jika UI module memungkinkan
+        if (window.DonaUI && window.DonaUI.showLoading) {
+            window.DonaUI.showLoading('Memuat data transaksi...');
+        }
+
         // Load campaigns first for title lookup
         const campaigns = await window.DonaContract.getAllCampaigns();
         AppState.allCampaigns = campaigns;
@@ -938,10 +945,24 @@ async function loadAuditDetailPageData() {
 
         renderAllTransactions(tab);
 
-        console.log('✅ Audit detail page data loaded', campaignId ? `(Campaign #${campaignId})` : '(All)');
+        if (window.DonaUI && window.DonaUI.hideLoading) {
+            window.DonaUI.hideLoading();
+        }
 
     } catch (error) {
         console.error('❌ Failed to load audit detail page data:', error);
+        
+        if (window.DonaUI && window.DonaUI.hideLoading) {
+            window.DonaUI.hideLoading();
+        }
+
+        // Tampilkan pesan error ke user
+        if (window.DonaUI && window.DonaUI.showErrorModal) {
+            window.DonaUI.showErrorModal(
+                'Gagal Memuat Data', 
+                'Terjadi masalah saat mengambil data dari blockchain (Rate Limit). Silakan coba refresh halaman dalam beberapa saat.'
+            );
+        }
     }
 }
 
@@ -1062,7 +1083,7 @@ async function loadAdminPageData() {
 }
 
 // ============================================
-// LEADERBOARD PAGE - Halaman Leaderboard
+// STATISTIK DONATUR PAGE - Halaman Statistik Donatur
 // ============================================
 
 // State untuk leaderboard
@@ -1077,7 +1098,7 @@ const LeaderboardState = {
  */
 async function loadLeaderboardPageData() {
     try {
-        console.log('📊 Loading leaderboard page data...');
+        console.log('📊 Loading statistik donatur page data...');
 
         // Load all donations
         const donations = await window.DonaContract.getAllDonations();
@@ -1109,10 +1130,10 @@ async function loadLeaderboardPageData() {
         // Show user position if connected
         showUserPosition();
 
-        console.log('✅ Leaderboard page data loaded');
+        console.log('✅ Statistik donatur page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load leaderboard page data:', error);
+        console.error('❌ Failed to load statistik donatur page data:', error);
     }
 }
 
@@ -1990,6 +2011,332 @@ function renderCampaignExpensesTable(expenses) {
 }
 
 // ============================================
+// CSV DOWNLOAD - Download Data Transparansi
+// ============================================
+
+/**
+ * Escape CSV value - always wrap in quotes for maximum Excel compatibility
+ */
+function escapeCSV(value) {
+    if (value == null) return '""';
+    const str = String(value);
+    // Always wrap in quotes and escape internal quotes
+    return '"' + str.replace(/"/g, '""') + '"';
+}
+
+/**
+ * Trigger CSV file download in browser
+ */
+function triggerCSVDownload(csvContent, filename) {
+    // Add BOM for Excel compatibility with UTF-8
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+/**
+ * Build transactions array from AppState donations & expenses
+ */
+function buildTransactionsForCSV(filter = 'all') {
+    const campaignMap = {};
+    if (AppState.allCampaigns) {
+        AppState.allCampaigns.forEach(c => { campaignMap[c.id] = c.title; });
+    }
+
+    let transactions = [];
+
+    if (filter === 'all' || filter === 'incoming') {
+        if (AppState.allDonations) {
+            transactions = transactions.concat(
+                AppState.allDonations.map(d => ({
+                    type: 'Dana Masuk',
+                    date: d.date,
+                    timestamp: d.timestamp || 0,
+                    campaignId: d.campaignId,
+                    campaignTitle: campaignMap[d.campaignId] || `Kampanye #${d.campaignId}`,
+                    details: 'Donasi diterima',
+                    amount: parseFloat(d.amount).toFixed(6),
+                    address: d.donor,
+                    txHash: d.txHash
+                }))
+            );
+        }
+    }
+
+    if (filter === 'all' || filter === 'outgoing') {
+        if (AppState.allExpenses) {
+            transactions = transactions.concat(
+                AppState.allExpenses.map(e => ({
+                    type: 'Dana Keluar',
+                    date: e.date,
+                    timestamp: e.timestamp || 0,
+                    campaignId: e.campaignId,
+                    campaignTitle: e.campaignId ? (campaignMap[e.campaignId] || `Kampanye #${e.campaignId}`) : '-',
+                    details: e.description,
+                    amount: parseFloat(e.amount).toFixed(6),
+                    address: e.recipient,
+                    txHash: e.txHash
+                }))
+            );
+        }
+    }
+
+    // Sort by timestamp descending
+    transactions.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    return transactions;
+}
+
+/**
+ * Convert transactions array to CSV string
+ */
+function transactionsToCSV(transactions) {
+    const SEP = ';';
+    const headers = ['Tipe', 'Tanggal', 'ID Kampanye', 'Nama Kampanye', 'Detail', 'Jumlah (ETH)', 'Alamat', 'Tx Hash'];
+    const rows = transactions.map(tx => [
+        escapeCSV(tx.type),
+        escapeCSV(tx.date),
+        escapeCSV(tx.campaignId),
+        escapeCSV(tx.campaignTitle),
+        escapeCSV(tx.details),
+        escapeCSV(tx.amount),
+        escapeCSV(tx.address),
+        escapeCSV(tx.txHash)
+    ].join(SEP));
+
+    // sep= hint tells Excel which delimiter to use
+    return 'sep=;\n' + headers.join(SEP) + '\n' + rows.join('\n');
+}
+
+/**
+ * Download semua transaksi (Dana Masuk + Dana Keluar)
+ * Bisa dipanggil dari halaman audit-detail
+ */
+async function downloadAllCSV() {
+    try {
+        window.DonaUI.showLoading('Menyiapkan data CSV...');
+
+        // If data not loaded yet, fetch it
+        if (!AppState.allDonations || !AppState.allExpenses) {
+            const [campaigns, donations, expenses] = await Promise.all([
+                window.DonaContract.getAllCampaigns(),
+                window.DonaContract.getAllDonations(),
+                window.DonaContract.getAllExpenses()
+            ]);
+            AppState.allCampaigns = campaigns;
+            AppState.allDonations = donations;
+            AppState.allExpenses = expenses;
+        }
+
+        const transactions = buildTransactionsForCSV('all');
+
+        if (transactions.length === 0) {
+            window.DonaUI.showToast('Tidak ada data untuk didownload', 'warning');
+            window.DonaUI.hideLoading();
+            return;
+        }
+
+        const csv = transactionsToCSV(transactions);
+        const date = new Date().toISOString().split('T')[0];
+        triggerCSVDownload(csv, `donachain_semua_transaksi_${date}.csv`);
+
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast(`${transactions.length} transaksi berhasil didownload`, 'success');
+    } catch (error) {
+        console.error('❌ Download CSV error:', error);
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast('Gagal mendownload CSV', 'error');
+    }
+}
+
+/**
+ * Download hanya dana masuk (donasi)
+ */
+async function downloadIncomingCSV() {
+    try {
+        window.DonaUI.showLoading('Menyiapkan data CSV...');
+
+        if (!AppState.allDonations) {
+            const [campaigns, donations] = await Promise.all([
+                window.DonaContract.getAllCampaigns(),
+                window.DonaContract.getAllDonations()
+            ]);
+            AppState.allCampaigns = campaigns;
+            AppState.allDonations = donations;
+        }
+
+        const transactions = buildTransactionsForCSV('incoming');
+
+        if (transactions.length === 0) {
+            window.DonaUI.showToast('Tidak ada data donasi untuk didownload', 'warning');
+            window.DonaUI.hideLoading();
+            return;
+        }
+
+        const csv = transactionsToCSV(transactions);
+        const date = new Date().toISOString().split('T')[0];
+        triggerCSVDownload(csv, `donachain_dana_masuk_${date}.csv`);
+
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast(`${transactions.length} donasi berhasil didownload`, 'success');
+    } catch (error) {
+        console.error('❌ Download CSV error:', error);
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast('Gagal mendownload CSV', 'error');
+    }
+}
+
+/**
+ * Download hanya dana keluar (pengeluaran)
+ */
+async function downloadOutgoingCSV() {
+    try {
+        window.DonaUI.showLoading('Menyiapkan data CSV...');
+
+        if (!AppState.allExpenses) {
+            const [campaigns, expenses] = await Promise.all([
+                window.DonaContract.getAllCampaigns(),
+                window.DonaContract.getAllExpenses()
+            ]);
+            AppState.allCampaigns = campaigns;
+            AppState.allExpenses = expenses;
+        }
+
+        const transactions = buildTransactionsForCSV('outgoing');
+
+        if (transactions.length === 0) {
+            window.DonaUI.showToast('Tidak ada data pengeluaran untuk didownload', 'warning');
+            window.DonaUI.hideLoading();
+            return;
+        }
+
+        const csv = transactionsToCSV(transactions);
+        const date = new Date().toISOString().split('T')[0];
+        triggerCSVDownload(csv, `donachain_dana_keluar_${date}.csv`);
+
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast(`${transactions.length} pengeluaran berhasil didownload`, 'success');
+    } catch (error) {
+        console.error('❌ Download CSV error:', error);
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast('Gagal mendownload CSV', 'error');
+    }
+}
+
+/**
+ * Download data per kampanye tertentu
+ */
+async function downloadCampaignCSV(campaignId) {
+    try {
+        window.DonaUI.showLoading('Menyiapkan data CSV kampanye...');
+
+        const [campaigns, donations, expenses] = await Promise.all([
+            window.DonaContract.getAllCampaigns(),
+            window.DonaContract.getDonationsForCampaign(campaignId),
+            window.DonaContract.getExpensesForCampaign(campaignId)
+        ]);
+
+        const campaignMap = {};
+        campaigns.forEach(c => { campaignMap[c.id] = c.title; });
+        const campaignTitle = campaignMap[campaignId] || `Kampanye #${campaignId}`;
+
+        let transactions = [];
+
+        transactions = transactions.concat(
+            donations.map(d => ({
+                type: 'Dana Masuk',
+                date: d.date,
+                timestamp: d.timestamp || 0,
+                campaignId: d.campaignId,
+                campaignTitle: campaignTitle,
+                details: 'Donasi diterima',
+                amount: parseFloat(d.amount).toFixed(6),
+                address: d.donor,
+                txHash: d.txHash
+            }))
+        );
+
+        transactions = transactions.concat(
+            expenses.map(e => ({
+                type: 'Dana Keluar',
+                date: e.date,
+                timestamp: e.timestamp || 0,
+                campaignId: e.campaignId,
+                campaignTitle: campaignTitle,
+                details: e.description,
+                amount: parseFloat(e.amount).toFixed(6),
+                address: e.recipient,
+                txHash: e.txHash
+            }))
+        );
+
+        transactions.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        if (transactions.length === 0) {
+            window.DonaUI.showToast('Tidak ada data untuk kampanye ini', 'warning');
+            window.DonaUI.hideLoading();
+            return;
+        }
+
+        const csv = transactionsToCSV(transactions);
+        const safeName = campaignTitle.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+        const date = new Date().toISOString().split('T')[0];
+        triggerCSVDownload(csv, `donachain_kampanye_${campaignId}_${safeName}_${date}.csv`);
+
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast(`${transactions.length} transaksi kampanye berhasil didownload`, 'success');
+    } catch (error) {
+        console.error('❌ Download Campaign CSV error:', error);
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast('Gagal mendownload CSV kampanye', 'error');
+    }
+}
+
+/**
+ * Download data audit halaman utama (audit.html) - semua transaksi
+ */
+async function downloadAuditPageCSV() {
+    try {
+        window.DonaUI.showLoading('Menyiapkan data CSV...');
+
+        const [campaigns, donations, expenses] = await Promise.all([
+            window.DonaContract.getAllCampaigns(),
+            window.DonaContract.getAllDonations(),
+            window.DonaContract.getAllExpenses()
+        ]);
+
+        AppState.allCampaigns = campaigns;
+        AppState.allDonations = donations;
+        AppState.allExpenses = expenses;
+
+        const transactions = buildTransactionsForCSV('all');
+
+        if (transactions.length === 0) {
+            window.DonaUI.showToast('Tidak ada data untuk didownload', 'warning');
+            window.DonaUI.hideLoading();
+            return;
+        }
+
+        const csv = transactionsToCSV(transactions);
+        const date = new Date().toISOString().split('T')[0];
+        triggerCSVDownload(csv, `donachain_laporan_transparansi_${date}.csv`);
+
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast(`${transactions.length} transaksi berhasil didownload`, 'success');
+    } catch (error) {
+        console.error('❌ Download Audit CSV error:', error);
+        window.DonaUI.hideLoading();
+        window.DonaUI.showToast('Gagal mendownload CSV', 'error');
+    }
+}
+
+// ============================================
 // EXPORT FUNCTIONS
 // ============================================
 
@@ -2017,6 +2364,13 @@ window.DonaApp = {
     filterCampaigns,
     filterAuditTransactions,
     updateWalletBalanceDisplay,
+
+    // CSV Download
+    downloadAllCSV,
+    downloadIncomingCSV,
+    downloadOutgoingCSV,
+    downloadCampaignCSV,
+    downloadAuditPageCSV,
 
     // State
     getState: () => ({ ...AppState })
