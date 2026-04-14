@@ -1,9 +1,9 @@
 {
   "network": "sepolia",
-  "deployedAt": "2026-02-02T16:11:59.718Z",
+  "deployedAt": "2026-03-02T12:14:38.786Z",
   "contracts": {
-    "DonachainNFT": "0x18F2DaF080C9FeD516a1bAf2f44EC6dffe258100",
-    "DonationManager": "0x6cE174d0c343cCbD0152A431645F9ec31aFA1BeF"
+    "DonachainNFT": "0xd75B9662422c3313189be64541150Fa9B3A95B19",
+    "DonationManager": "0xbacEEf7fAe3fa1896fB17FCd4251Baacd13f3200"
   },
   "admin": "0xEaEdf9E1175E6CA7B7F400e3fAaC1D3dE2F7Fe0e"
 }

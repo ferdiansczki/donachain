@@ -4,7 +4,7 @@ async function main() {
     console.log("🚀 Deploying Voting Contract...");
 
     // Address Contract NFT yang sudah ada
-    const NFT_CONTRACT_ADDRESS = "0x18F2DaF080C9FeD516a1bAf2f44EC6dffe258100";
+    const NFT_CONTRACT_ADDRESS = "0xd75B9662422c3313189be64541150Fa9B3A95B19";
 
     // Deploy Voting
     const Voting = await hre.ethers.getContractFactory("Voting");

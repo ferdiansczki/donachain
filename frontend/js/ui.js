@@ -297,7 +297,7 @@ function renderCampaignDetail(campaign) {
 }
 
 // ============================================
-// LEADERBOARD UI - Render Leaderboard
+// STATISTIK DONATUR UI - Render Statistik Donatur
 // ============================================
 
 /**
@@ -1008,28 +1008,56 @@ async function downloadCertificatePDF(donation) {
         }
 
         // Fetch NFT Image if eligible
-        if (donation.amount >= 0.01) {
+        if (donation.nftMinted || parseFloat(donation.amount) >= 0.01) {
             try {
                 // Try to find the specific NFT for this donation
                 const nfts = await window.DonaContract.getNFTsByOwner(donation.donor);
-                // Match by txHash if possible, or fallback
-                const match = nfts.find(n => n.txHash && n.txHash.toLowerCase() === donation.txHash.toLowerCase());
 
-                if (match && match.tokenURI) {
-                    // Parse tokenURI to get image URL
-                    let imageUrl = match.imageUrl; // getNFTsByOwner already parses it hopefully, or we use tokenURI logic
-                    if (!imageUrl) {
-                        // Manual parse if needed (simplified from renderNFTGallery logic)
-                        const base64Data = match.tokenURI.split(',')[1];
-                        const metadata = JSON.parse(atob(base64Data));
-                        imageUrl = metadata.image;
-                        if (imageUrl.startsWith('ipfs://')) {
-                            imageUrl = `https://gateway.pinata.cloud/ipfs/${imageUrl.replace('ipfs://', '')}`;
+                if (nfts && nfts.length > 0) {
+                    // Strategy 1: Match by txHash
+                    let match = nfts.find(n => n.txHash && donation.txHash &&
+                        n.txHash.toLowerCase() === donation.txHash.toLowerCase());
+
+                    // Strategy 2: Match by campaignId + closest amount
+                    if (!match) {
+                        const campaignNFTs = nfts.filter(n =>
+                            Number(n.campaignId) === Number(donation.campaignId)
+                        );
+                        if (campaignNFTs.length === 1) {
+                            match = campaignNFTs[0];
+                        } else if (campaignNFTs.length > 1) {
+                            // Pick the one with closest amount
+                            const donationAmount = parseFloat(donation.amount);
+                            match = campaignNFTs.reduce((best, nft) => {
+                                const diff = Math.abs(parseFloat(nft.amount) - donationAmount);
+                                const bestDiff = Math.abs(parseFloat(best.amount) - donationAmount);
+                                return diff < bestDiff ? nft : best;
+                            });
                         }
                     }
 
-                    if (imageUrl) {
-                        nftImageBase64 = await loadImageToBase64(imageUrl);
+                    // Strategy 3: Just use any NFT with same campaignId
+                    if (!match) {
+                        match = nfts.find(n => Number(n.campaignId) === Number(donation.campaignId));
+                    }
+
+                    if (match && match.tokenURI) {
+                        // Parse tokenURI to get image URL
+                        let imageUrl = null;
+                        try {
+                            const base64Data = match.tokenURI.split(',')[1];
+                            const metadata = JSON.parse(atob(base64Data));
+                            imageUrl = metadata.image;
+                            if (imageUrl && imageUrl.startsWith('ipfs://')) {
+                                imageUrl = `https://gateway.pinata.cloud/ipfs/${imageUrl.replace('ipfs://', '')}`;
+                            }
+                        } catch (parseErr) {
+                            console.warn('Failed to parse tokenURI:', parseErr);
+                        }
+
+                        if (imageUrl) {
+                            nftImageBase64 = await loadImageToBase64(imageUrl);
+                        }
                     }
                 }
             } catch (e) {
@@ -1118,7 +1146,7 @@ async function downloadCertificatePDF(donation) {
         doc.setTextColor(37, 99, 235); // Blue link color
         const txHash = donation.txHash || '-';
         doc.textWithLink(txHash, 20, yPos, { url: window.DonaConfig.getEtherscanTxUrl(txHash) });
-        yPos += 20;
+        yPos += 15;
 
         // 5. NFT Section
         if (nftImageBase64) {
@@ -1126,27 +1154,39 @@ async function downloadCertificatePDF(donation) {
             doc.setFontSize(10);
             doc.setTextColor(34, 197, 94); // Green
             doc.text('* NFT Sertifikat telah dikirim ke wallet Anda', pageWidth / 2, yPos, { align: 'center' });
-            yPos += 10;
+            yPos += 6;
+            doc.setFontSize(9);
+            doc.setTextColor(107, 114, 128); // Gray-500
+            doc.text('Preview NFT:', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 5;
 
             // Draw NFT Image
-            const imgSize = 80;
-            // Check remaining space
-            if (yPos + imgSize > doc.internal.pageSize.getHeight() - 20) {
+            const imgSize = 60;
+            // Check remaining space (need image + thank you + footer)
+            if (yPos + imgSize + 40 > doc.internal.pageSize.getHeight() - 20) {
                 doc.addPage();
                 yPos = 30;
             }
 
             doc.addImage(nftImageBase64, 'PNG', (pageWidth - imgSize) / 2, yPos, imgSize, imgSize);
-            yPos += imgSize + 10;
-        } else if (donation.amount >= 0.01) {
+            yPos += imgSize + 8;
+        } else if (parseFloat(donation.amount) >= 0.01) {
             // Text only if image failed
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(10);
             doc.setTextColor(34, 197, 94);
             doc.text('* NFT Sertifikat telah dikirim ke wallet Anda', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 8;
         }
+
         // 6. Thank You Message
-        yPos += 10;
+        // Check if there's enough space, otherwise add new page
+        if (yPos + 30 > doc.internal.pageSize.getHeight() - 30) {
+            doc.addPage();
+            yPos = 30;
+        }
+
+        yPos += 5;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
         doc.setTextColor(31, 41, 55); // Gray-900
@@ -1155,7 +1195,7 @@ async function downloadCertificatePDF(donation) {
         doc.text('melalui platform kami.', pageWidth / 2, yPos, { align: 'center' });
 
         // 7. Footer
-        const footerY = doc.internal.pageSize.getHeight() - 20;
+        const footerY = doc.internal.pageSize.getHeight() - 15;
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(9);
         doc.setTextColor(156, 163, 175); // Gray-400
@@ -1277,7 +1317,7 @@ window.DonaUI = {
     renderCampaignCards,
     renderCampaignDetail,
 
-    // Leaderboard
+    // Statistik Donatur
     renderLeaderboard,
 
     // Donation Feed

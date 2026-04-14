@@ -26,10 +26,12 @@ const NETWORK_CONFIG = {
         decimals: 18
     },
     rpcUrls: [
-        'https://sepolia.infura.io/v3/a4817bd7a0b34023ae88f910f9683cd2', // Primary (Infura)
-        'https://rpc.sepolia.org',                 // Public 1
-        'https://1rpc.io/sepolia',                 // Public 2
-        'https://ethereum-sepolia-rpc.publicnode.com' // Public 3
+        'https://sepolia.infura.io/v3/a4817bd7a0b34023ae88f910f9683cd2', // Primary
+        'https://rpc.ankr.com/eth_sepolia',         // Ankr
+        'https://rpc.sepolia.org',                // Public 1
+        'https://1rpc.io/sepolia',                // Public 2
+        'https://ethereum-sepolia-rpc.publicnode.com', // Public 3
+        'https://sepolia.gateway.tenderly.co'     // Tenderly
     ],
     blockExplorerUrls: ['https://sepolia.etherscan.io']
 };
@@ -267,7 +269,7 @@ const DONATION_MANAGER_ABI = [
         "type": "function"
     },
 
-    // Ambil leaderboard
+    // Ambil statistik donatur
     {
         "inputs": [{ "name": "count", "type": "uint256" }],
         "name": "getLeaderboard",
