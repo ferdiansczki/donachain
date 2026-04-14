@@ -50,17 +50,27 @@ let currentRpcIndex = 0; // Melacak index RPC yang sedang digunakan
 async function initReadContracts(startIndex = 0) {
     const config = window.DonaConfig;
     const rpcUrls = config.NETWORK_CONFIG.rpcUrls;
+    const chainId = config.NETWORK_CONFIG.chainIdDecimal;
 
     // Coba setiap RPC URL satu per satu
     for (let i = 0; i < rpcUrls.length; i++) {
         const index = (startIndex + i) % rpcUrls.length;
         try {
-            console.log(`🔗 Mencoba RPC ${index + 1}/${rpcUrls.length}: ${rpcUrls[index].substring(0, 40)}...`);
+            console.log(`🔗 Mencoba RPC ${index + 1}/${rpcUrls.length}: ${rpcUrls[index].substring(0, 45)}...`);
 
-            const provider = new ethers.JsonRpcProvider(rpcUrls[index]);
+            // OPTIMISASI: Gunakan staticNetwork agar Ethers tidak melakukan request eth_chainId tambahan
+            const provider = new ethers.JsonRpcProvider(rpcUrls[index], chainId, {
+                staticNetwork: true,
+                batchMaxCount: 1
+            });
 
-            // Test koneksi dengan request ringan
-            await provider.getBlockNumber();
+            // Test koneksi dengan timeout (5 detik)
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('timeout')), 5000);
+            });
+
+            const blockPromise = provider.getBlockNumber();
+            await Promise.race([blockPromise, timeoutPromise]);
 
             donationManagerRead = new ethers.Contract(
                 config.DONATION_MANAGER_ADDRESS,
@@ -85,7 +95,13 @@ async function initReadContracts(startIndex = 0) {
             return true;
 
         } catch (error) {
+            const errorMsg = error.message.toLowerCase();
             console.warn(`⚠️ RPC ${index + 1} gagal: ${error.message}`);
+            
+            // Jika error karena auth/API key, langsung lanjut ke RPC berikutnya
+            if (errorMsg.includes('unauthorized') || errorMsg.includes('api key')) {
+                continue;
+            }
         }
     }
 
@@ -129,12 +145,19 @@ async function readCallWithRetry(fnName, ...args) {
             lastError = error;
             const msg = error.message.toLowerCase();
             
-            // Cek jika error karena rate limit atau koneksi
-            if (msg.includes('too many requests') || msg.includes('429') || msg.includes('timeout') || msg.includes('missing response')) {
-                console.warn(`⚠️ Percobaan ${attempt + 1} gagal (${fnName}): Rate limit tercapai. Mencoba rotasi RPC...`);
+            // Cek jika error karena rate limit, koneksi, atau auth
+            const isRetryable = msg.includes('too many requests') || 
+                               msg.includes('429') || 
+                               msg.includes('timeout') || 
+                               msg.includes('missing response') ||
+                               msg.includes('unauthorized') ||
+                               msg.includes('api key');
+
+            if (isRetryable) {
+                console.warn(`⚠️ Percobaan ${attempt + 1} gagal (${fnName}): Masalah RPC. Mencoba rotasi...`);
                 await rotateRpc();
-                // Tunggu sebentar sebelum mencoba lagi
-                await new Promise(r => setTimeout(r, 500));
+                // Tunggu sebentar sebelum mencoba lagi (backoff meningkat)
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
             } else {
                 // Jika error logika kontrak, jangan retry
                 throw error;
