@@ -70,6 +70,11 @@ async function initApp() {
         // Deteksi halaman
         detectCurrentPage();
 
+        // Update link smart contract agar ambil dari config
+        if (window.DonaUI && window.DonaUI.updateContractLinks) {
+            window.DonaUI.updateContractLinks();
+        }
+
         // Inisialisasi read contracts
         const contractsInitialized = await window.DonaContract.initReadContracts();
         
@@ -1820,8 +1825,10 @@ function renderAllTransactions(filter = 'all') {
                     </a>
                 </td>
                 <td class="py-3 px-4">
-                     <a href="${config.getEtherscanTxUrl(tx.txHash)}" target="_blank" class="text-xs text-blue-500 hover:text-blue-700">
-                        <i class="fas fa-external-link-alt"></i> Tx
+                    <a href="${config.getEtherscanTxUrl(tx.txHash)}" 
+                       target="_blank" 
+                       class="text-blue-600 hover:text-blue-800 font-mono text-sm">
+                        ${window.DonaWallet.formatAddress(tx.txHash)}
                     </a>
                 </td>
             </tr>
