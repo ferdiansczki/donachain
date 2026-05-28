@@ -484,16 +484,15 @@ function renderIncomingFundsTable(donations, containerId = 'incoming-funds-table
             <td class="py-3 px-4">
                 <a href="${window.DonaConfig.getEtherscanAddressUrl(donation.donor)}" 
                    target="_blank"
-                   class="text-gray-600 hover:text-blue-600 font-mono text-sm">
+                   class="text-blue-600 hover:text-blue-800 font-mono text-sm">
                     ${donation.donorShort}
                 </a>
             </td>
             <td class="py-3 px-4">
                 <a href="${donation.txUrl}" 
                    target="_blank"
-                   class="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1">
-                    <span class="font-mono truncate max-w-[100px]">${donation.txHash.substring(0, 10)}...</span>
-                    <i class="fas fa-external-link-alt text-xs"></i>
+                   class="text-blue-600 hover:text-blue-800 font-mono text-sm">
+                    ${window.DonaWallet.formatAddress(donation.txHash)}
                 </a>
             </td>
         </tr>
@@ -552,16 +551,15 @@ function renderOutgoingFundsTable(expenses, containerId = 'outgoing-funds-table'
             <td class="py-3 px-4">
                 <a href="${window.DonaConfig.getEtherscanAddressUrl(expense.recipient)}" 
                    target="_blank"
-                   class="text-gray-600 hover:text-blue-600 font-mono text-sm">
+                   class="text-blue-600 hover:text-blue-800 font-mono text-sm">
                     ${expense.recipientShort}
                 </a>
             </td>
             <td class="py-3 px-4">
                 <a href="${expense.txUrl}" 
                    target="_blank"
-                   class="text-blue-500 hover:text-blue-700 text-sm flex items-center gap-1">
-                    <span class="font-mono truncate max-w-[100px]">${expense.txHash.substring(0, 10)}...</span>
-                    <i class="fas fa-external-link-alt text-xs"></i>
+                   class="text-blue-600 hover:text-blue-800 font-mono text-sm">
+                    ${window.DonaWallet.formatAddress(expense.txHash)}
                 </a>
             </td>
         </tr>
@@ -806,6 +804,25 @@ function renderTransparencyStats(stats) {
     if (balanceEl) {
         balanceEl.textContent = `${parseFloat(stats.contractBalance).toFixed(3)} ETH`;
     }
+
+    // Update link smart contract jika ada
+    updateContractLinks();
+}
+
+/**
+ * Update semua link "Lihat Smart Contract" agar sesuai dengan alamat di config
+ */
+function updateContractLinks() {
+    const config = window.DonaConfig;
+    const contractUrl = config.getEtherscanAddressUrl(config.DONATION_MANAGER_ADDRESS);
+
+    // Cari semua link dengan ID yang mengandung 'etherscan-contract-link'
+    const links = document.querySelectorAll('a[id*="etherscan-contract-link"]');
+    links.forEach(link => {
+        link.href = contractUrl;
+    });
+
+    console.log('🔗 Link smart contract diupdate ke:', config.DONATION_MANAGER_ADDRESS);
 }
 
 // ============================================
@@ -1347,7 +1364,10 @@ window.DonaUI = {
     downloadCertificatePDF,
 
     // Admin
-    renderAdminCampaignTable
+    renderAdminCampaignTable,
+
+    // Utils
+    updateContractLinks
 };
 
 console.log('✅ Donachain UI module loaded successfully');
