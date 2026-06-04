@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Panduan Pemula Donachain - Cara menggunakan platform donasi blockchain">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>Panduan Pemula - Donachain</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* Whitepaper specific styles */
+        .whitepaper-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 3rem;
+            line-height: 1.8;
+            color: #374151;
+        }
+
+        .guide-section {
+            margin-bottom: 4rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .guide-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: #467ac6;
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+
+        .placeholder-image {
+            background: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            border-radius: 1rem;
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 1.5rem 0;
+            color: #9ca3af;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-nav {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
+
+        .sidebar-link {
+            display: block;
+            padding: 0.5rem 0;
+            color: #6b7280;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+            border-left: 2px solid transparent;
+            padding-left: 1rem;
+        }
+
+        .sidebar-link:hover {
+            color: #467ac6;
+            border-left-color: #cbd5e1;
+        }
+
+        .sidebar-link.active {
+            color: #467ac6;
+            font-weight: 600;
+            border-left-color: #467ac6;
+        }
+
+        code {
+            background: #f3f4f6;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.9em;
+            color: #dc2626;
+        }
+
+        .tip-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1.5rem;
+            border-radius: 0 0.75rem 0.75rem 0;
+            margin: 1.5rem 0;
+        }
+
+        @media (max-width: 1024px) {
+            .whitepaper-container {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        primary: { 500: '#467ac6', 600: '#3561a0' },
+                        blue: { 400: '#467ac6', 500: '#467ac6', 600: '#3561a0' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-50 font-sans">
+    <!-- NAVBAR -->
+    <nav class="navbar px-6 py-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-3">
+                <img src="img/donachain.png" alt="Donachain" class="h-10">
+            </a>
+
+            <div class="hidden md:flex items-center gap-8">
+                <a href="index.html" class="nav-link font-medium">Beranda</a>
+                <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
+                <a href="audit.html" class="nav-link font-medium">Transparansi</a>
+                <a href="leaderboard.html" class="nav-link font-medium">Statistik Donatur</a>
+                <a href="about.html" class="nav-link font-medium">Tentang</a>
+                <a href="guide.html" class="nav-link font-medium text-blue-600">Panduan</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <button id="connect-wallet-btn" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    <span class="hidden sm:inline">Connect Wallet</span>
+                </button>
+
+                <div id="wallet-info" class="hidden relative">
+                    <button id="wallet-btn"
+                        class="flex items-center gap-3 bg-white border border-gray-200 hover:bg-blue-50 px-4 py-2 rounded-xl transition-colors">
+                        <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <i class="fas fa-user text-blue-600 text-sm"></i>
+                        </div>
+                        <span id="wallet-address" class="font-mono text-sm text-gray-700"></span>
+                        <i class="fas fa-chevron-down text-gray-500 text-xs"></i>
+                    </button>
+
+                    <div id="wallet-dropdown" class="hidden absolute right-0 top-full mt-2 dropdown-menu"
+                        style="min-width: 100%;">
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user-circle mr-2"></i> Profil Saya
+                        </a>
+                        <a id="admin-link" href="admin.html" class="dropdown-item bg-blue-50 hidden">
+                            <i class="fas fa-cog mr-2"></i> Admin Panel
+                        </a>
+                        <hr class="border-gray-200 my-1">
+                        <button id="disconnect-btn"
+                            class="dropdown-item w-full text-left text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
+                <button id="hamburger-btn" class="hamburger-btn md:hidden">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu-overlay" class="mobile-menu-overlay"></div>
+    <div id="mobile-menu" class="mobile-menu">
+        <a href="index.html" class="mobile-nav-link text-gray-600"><i class="fas fa-home"></i> Beranda</a>
+        <a href="campaigns.html" class="mobile-nav-link text-gray-600"><i class="fas fa-bullhorn"></i> Kampanye</a>
+        <a href="audit.html" class="mobile-nav-link text-gray-600"><i class="fas fa-shield-halved"></i> Transparansi</a>
+        <a href="leaderboard.html" class="mobile-nav-link text-gray-600"><i class="fas fa-trophy"></i> Statistik Donatur</a>
+        <a href="about.html" class="mobile-nav-link text-gray-600"><i class="fas fa-info-circle"></i> Tentang</a>
+        <a href="guide.html" class="mobile-nav-link active text-blue-600 bg-blue-50"><i class="fas fa-book"></i> Panduan</a>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <main class="py-12 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12">
+            
+            <!-- Sidebar Navigation -->
+            <aside class="hidden lg:block w-64 sidebar-nav">
+                <h5 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Isi Panduan</h5>
+                <nav class="flex flex-col">
+                    <a href="#intro" class="sidebar-link">Pendahuluan</a>
+                    <a href="#glossary" class="sidebar-link">Mengenal Istilah</a>
+                    <a href="#step1" class="sidebar-link">1. Instalasi MetaMask</a>
+                    <a href="#step2" class="sidebar-link">2. Konfigurasi Jaringan</a>
+                    <a href="#step3" class="sidebar-link">3. Mendapatkan Test ETH</a>
+                    <a href="#step4" class="sidebar-link">4. Cara Berdonasi</a>
+                    <a href="#step5" class="sidebar-link">5. Bukti Kontribusi (NFT)</a>
+                    <a href="#step6" class="sidebar-link">6. Voting Kampanye</a>
+                    <a href="#step7" class="sidebar-link">7. Transparansi Audit</a>
+                    <a href="#step8" class="sidebar-link">8. Statistik Donatur</a>
+                </nav>
+            </aside>
+
+            <!-- Content Area -->
+            <div class="whitepaper-container shadow-sm border border-gray-100 rounded-2xl">
+                
+                <!-- Introduction -->
+                <section id="intro" class="guide-section">
+                    <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Panduan Pemula Donachain</h1>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Selamat datang di Donachain. Platform ini menggunakan teknologi blockchain untuk memastikan setiap donasi Anda sampai ke tujuan dengan transparansi 100%. Donasi dilakukan menggunakan aset kripto Ethereum (ETH) di jaringan uji coba (testnet) Sepolia.
+                    </p>
+                    <div class="tip-box">
+                        <p class="font-semibold text-blue-800">Catatan Penting:</p>
+                        <p class="text-blue-700">Platform ini berjalan di jaringan <strong>Sepolia Testnet</strong>. Donasi yang dikirimkan menggunakan saldo uji coba dan tidak memiliki nilai uang riil.</p>
+                    </div>
+
+                    <!-- Glossary / Terms Section -->
+                    <div id="glossary" class="mt-8 pt-8 border-t border-gray-100">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Glosarium/Istilah Penting</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">Blockchain</h4>
+                                <p class="text-sm text-gray-600">Teknologi buku besar digital yang mencatat transaksi secara permanen dan menjaga integritas data sehingga informasi yang telah tercatat tidak dapat diubah.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">Crypto Wallet</h4>
+                                <p class="text-sm text-gray-600">Dompet digital yang digunakan untuk menyimpan aset kripto dan melakukan transaksi pada platform ini.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">Ethereum (ETH)</h4>
+                                <p class="text-sm text-gray-600">Aset kripto yang digunakan sebagai media transaksi pada platform ini.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">Smart Contract</h4>
+                                <p class="text-sm text-gray-600">Program yang berjalan di blockchain untuk mengatur dan mengeksekusi transaksi secara otomatis sesuai aturan yang telah ditentukan.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">Sepolia Testnet</h4>
+                                <p class="text-sm text-gray-600">Jaringan uji coba Ethereum yang digunakan untuk pengembangan dan pengujian aplikasi tanpa menggunakan aset kripto bernilai nyata.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-blue-600 mb-1">NFT (Non-Fungible Token)</h4>
+                                <p class="text-sm text-gray-600">Aset digital unik berbasis blockchain yang diberikan kepada donatur sebagai bentuk apresiasi atas kontribusinya.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 1: MetaMask -->
+                <section id="step1" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">1</span>
+                        Instalasi MetaMask
+                    </h2>
+                    <p>
+                        MetaMask adalah dompet digital (wallet) yang berfungsi sebagai identitas Anda di dunia Web3. Anda memerlukan MetaMask untuk berinteraksi dengan Donachain.
+                    </p>
+                    <ol class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Kunjungi <a href="https://metamask.io/download/" target="_blank" class="text-blue-600 hover:underline">metamask.io</a>.</li>
+                        <li>Klik <strong>Install MetaMask</strong> untuk browser Anda (Chrome, Edge, Brave) atau download aplikasinya di App Store/Play Store.</li>
+                        <li>Ikuti instruksi pembuatan wallet baru. Pastikan Anda menyimpan <strong>Secret Recovery Phrase</strong> di tempat yang sangat aman dan jangan pernah membagikannya kepada siapapun.</li>
+                    </ol>
+                    <div class="placeholder-image">
+                        <img src="img/1.png" alt="Instalasi MetaMask" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 2: Konfigurasi Jaringan -->
+                <section id="step2" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">2</span>
+                        Konfigurasi ke Jaringan Sepolia
+                    </h2>
+                    <p>
+                        Donachain menggunakan jaringan Ethereum Sepolia. Biasanya, MetaMask sudah menyertakan jaringan ini secara default.
+                    </p>
+                    <ol class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Buka MetaMask Anda.</li>
+                        <li>Klik menu pilihan jaringan di pojok kiri atas.</li>
+                        <li>Pilih <strong>Sepolia Test Network</strong>.</li>
+                        <li>Jika tidak muncul, buka 'Settings' > 'Networks' > aktifkan <strong>Show test networks</strong>.</li>
+                    </ol>
+                    <div class="placeholder-image">
+                        <img src="img/2.png" alt="Konfigurasi Jaringan" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 3: Test ETH -->
+                <section id="step3" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">3</span>
+                        Mendapatkan Testnet ETH (Faucet)
+                    </h2>
+                    <p>
+                        Karena kita menggunakan jaringan uji coba, Anda bisa mendapatkan saldo ETH secara gratis melalui "Faucet".
+                    </p>
+                    <ol class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Salin alamat wallet Anda dari MetaMask (klik pada bagian kode unik di bawah nama akun Anda).</li>
+                        <li>Kunjungi penyedia faucet seperti <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia/" target="_blank" class="text-blue-600 hover:underline">Google Cloud Web3</a>.</li>
+                        <li>Masukkan alamat wallet Anda dan ikuti instruksi hingga saldo ETH masuk ke wallet Anda.</li>
+                    </ol>
+                    <div class="placeholder-image">
+                        <img src="img/3.png" alt="Testnet ETH" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 4: Berdonasi -->
+                <section id="step4" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">4</span>
+                        Cara Melakukan Donasi
+                    </h2>
+                    <p>
+                        Setelah wallet terhubung dan memiliki saldo, kini Anda siap untuk berdonasi.
+                    </p>
+                    <ol class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Kembali ke halaman <strong>Kampanye</strong> di Donachain.</li>
+                        <li>Klik tombol <strong>Hubungkan Wallet</strong> di pojok kanan atas.</li>
+                        <li>Pilih kampanye yang ingin Anda dukung.</li>
+                        <li>Masukkan jumlah donasi (misal: <code>0.01</code> ETH).</li>
+                        <li>Klik <strong>Kirim Donasi</strong> dan klik <strong>Confirm</strong> pada pop-up MetaMask yang muncul.</li>
+                    </ol>
+                    <div class="placeholder-image">
+                        <img src="img/4.png" alt="Cara Berdonasi" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 5: NFT -->
+                <section id="step5" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">5</span>
+                        Mendapatkan Bukti Kontribusi (NFT)
+                    </h2>
+                    <p>
+                        Sebagai bentuk apresiasi, Donachain memberikan sertifikat digital berupa NFT untuk donasi dengan jumlah minimal tertentu.
+                    </p>
+                    <ul class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Donasi minimal <strong>0.01 ETH</strong> akan mendapatkan NFT Sertifikat otomatis.</li>
+                        <li>Anda dapat melihat koleksi NFT Anda di halaman <strong>Profil Saya</strong>.</li>
+                        <li>Setiap NFT memiliki ID unik yang membuktikan kontribusi Anda tersimpan selamanya di blockchain.</li>
+                    </ul>
+                    <div class="placeholder-image">
+                        <img src="img/5.png" alt="NFT Sertifikat" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 6: Voting -->
+                <section id="step6" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">6</span>
+                        Menggunakan Tiket Voting
+                    </h2>
+                    <p>
+                        NFT Sertifikat yang Anda terima bukan sekadar gambar, melainkan <b>Tiket Voting</b>. Anda dapat 
+                        menggunakan tiket ini untuk memberikan dukungan pada kampanye favorit Anda.
+                    </p>
+                    <ul class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Buka halaman detail kampanye yang ingin Anda dukung.</li>
+                        <li>Klik tab <strong>Voting</strong> untuk melihat statistik dukungan.</li>
+                        <li>Klik tombol <strong>Vote Kampanye Ini</strong> menggunakan tiket NFT Anda.</li>
+                        <li>Voting meningkatkan kepercayaan donatur lain terhadap kampanye tersebut.</li>
+                    </ul>
+                    <div class="placeholder-image">
+                        <img src="img/6.png" alt="Voting Kampanye" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 7: Transparansi -->
+                <section id="step7" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">7</span>
+                        Audit & Transparansi
+                    </h2>
+                    <p>
+                        Donachain menjamin transparansi 100%. Anda dapat memantau setiap dana yang masuk dan keluar secara real-time.
+                    </p>
+                    <ul class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Kunjungi halaman <strong>Transparansi</strong> untuk melihat laporan keuangan platform secara global.</li>
+                        <li>Pada setiap detail kampanye, pilih tab <strong>Audit</strong> untuk melihat riwayat dana spesifik kampanye tersebut.</li>
+                        <li>Klik pada link <strong>Tx Hash</strong> atau <strong>Address</strong> untuk memverifikasi transaksi langsung di blockchain via <b>Etherscan</b>.</li>
+                    </ul>
+                    <div class="placeholder-image">
+                        <img src="img/7.png" alt="Transparansi Audit" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Step 8: Statistik Donatur -->
+                <section id="step8" class="guide-section">
+                    <h2 class="section-title">
+                        <span class="step-number">8</span>
+                        Statistik Donatur (Leaderboard)
+                    </h2>
+                    <p>
+                        Apresiasi bagi para donatur terbaik ditampilkan di halaman <b>Statistik Donatur</b>. Sistem secara otomatis 
+                        mengurutkan donatur berdasarkan total kontribusi tertinggi yang tercatat di blockchain.
+                    </p>
+                    <ul class="list-decimal ml-6 mt-4 space-y-2">
+                        <li>Lihat peringkat 5 donatur teratas di beranda.</li>
+                        <li>Buka halaman <strong>Statistik Donatur</strong> untuk daftar lengkap leaderboard.</li>
+                        <li>Alamat wallet donatur ditampilkan sebagai identitas anonim namun tetap terverifikasi.</li>
+                    </ul>
+                    <div class="placeholder-image">
+                        <img src="img/8.png" alt="Statistik Donatur" class="w-full h-full object-cover rounded-xl">
+                    </div>
+                </section>
+
+                <!-- Closing -->
+                <div class="mt-12 text-center p-8 bg-gray-50 rounded-2xl border border-gray-100">
+                    <h3 class="text-xl font-bold mb-4 text-gray-900">Siap untuk memulai?</h3>
+                    <a href="campaigns.html" class="btn-primary px-10 py-4 text-lg">
+                        Lihat Daftar Kampanye
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-gray-200 py-8 px-6 mt-12 bg-gray-50">
+        <div class="max-w-7xl mx-auto text-center text-gray-500 text-sm">
+            © 2026 Donachain. Platform donasi transparan berbasis blockchain.
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/config.js"></script>
+    <script src="js/wallet.js"></script>
+    <script src="js/contract.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Simple script to handle active sidebar link based on scroll
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('.guide-section');
+            const navLinks = document.querySelectorAll('.sidebar-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 150) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

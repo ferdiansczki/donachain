@@ -64,4 +64,3 @@ window.DonaIPFS = {
     uploadToPinata
 };
 
-console.log('✅ IPFS Module loaded');

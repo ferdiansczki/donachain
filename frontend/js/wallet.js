@@ -1,30 +1,16 @@
 /**
  * @file wallet.js
- * @description Modul untuk mengelola koneksi wallet MetaMask
- * 
- * FILE INI MENANGANI:
- * 1. Koneksi ke MetaMask
- * 2. Validasi jaringan (harus Sepolia)
- * 3. Penanganan perubahan akun/jaringan
- * 4. Disconnect wallet
- * 
- * DEPENDENCY:
- * - config.js (harus dimuat terlebih dahulu)
- * - ethers.js (dari CDN)
- * 
- * @author Donachain Team
+ * @description Modul pengelolaan koneksi dompet MetaMask, validasi jaringan, 
+ * dan penanganan perubahan status akun pengguna.
  */
 
-// ============================================
-// STATE VARIABLES - Variabel Status
-// ============================================
+
+// VARIABEL STATUS
+
 
 /**
- * State wallet saat ini
- * 
- * PENJELASAN:
- * Object ini menyimpan status koneksi wallet secara global
- * sehingga bisa diakses dari modul manapun
+ * Menyimpan status koneksi dompet saat ini secara global.
+ * Objek ini memungkinkan akses status dari modul lain dalam aplikasi.
  */
 const WalletState = {
     isConnected: false,      // Status koneksi
@@ -34,39 +20,26 @@ const WalletState = {
     isCorrectNetwork: false  // Apakah di jaringan Sepolia
 };
 
-// ============================================
-// WALLET CONNECTION - Koneksi Wallet
-// ============================================
+
+// KONEKSI DOMPET
+
 
 /**
- * Cek apakah MetaMask terinstall di browser
+ * Memeriksa apakah ekstensi MetaMask telah terpasang pada peramban.
  * 
- * @returns {boolean} true jika MetaMask tersedia
+ * @returns {boolean} True jika MetaMask tersedia.
  * 
- * PENJELASAN:
- * MetaMask meng-inject object 'ethereum' ke window browser.
- * Kita cek apakah object ini ada untuk mengetahui
- * apakah user sudah install MetaMask.
+ * Deskripsi:
+ * MetaMask menyuntikkan objek 'ethereum' ke dalam objek window peramban.
+ * Pemeriksaan dilakukan pada objek tersebut untuk memastikan ketersediaan MetaMask.
  */
 function isMetaMaskInstalled() {
     return typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
 }
 
 /**
- * Koneksi ke MetaMask
- * 
- * @returns {Promise<object>} Object berisi status koneksi dan alamat
- * 
- * PENJELASAN FLOW:
- * 1. Cek apakah MetaMask terinstall
- * 2. Request akses ke akun user (memunculkan popup MetaMask)
- * 3. Buat provider dan signer dari ethers.js
- * 4. Cek apakah user di jaringan yang benar
- * 5. Jika salah jaringan, minta user untuk switch
- * 
- * ERROR HANDLING:
- * - Jika MetaMask tidak terinstall, lempar error
- * - Jika user menolak koneksi, tangkap error dan kembalikan status
+ * Menangani prosedur koneksi ke dompet MetaMask, validasi jaringan (Sepolia), 
+ * dan inisialisasi provider/signer.
  */
 async function connectWallet() {
     try {
@@ -75,7 +48,6 @@ async function connectWallet() {
             throw new Error('MetaMask belum terinstall. Silakan install MetaMask terlebih dahulu.');
         }
 
-        console.log('🔌 Menghubungkan ke MetaMask...');
 
         // Request akses ke akun
         // Ini akan memunculkan popup MetaMask meminta izin
@@ -109,7 +81,6 @@ async function connectWallet() {
 
         // Jika jaringan salah, minta switch
         if (!isCorrectNetwork) {
-            console.log('⚠️ Jaringan salah, meminta switch ke Sepolia...');
             await switchToSepolia();
         }
 
@@ -120,7 +91,6 @@ async function connectWallet() {
         localStorage.setItem('dona_wallet_connected', 'true');
         localStorage.setItem('dona_wallet_address', address);
 
-        console.log('✅ Wallet terkoneksi:', address);
 
         return {
             success: true,
@@ -129,7 +99,7 @@ async function connectWallet() {
         };
 
     } catch (error) {
-        console.error('❌ Gagal koneksi wallet:', error);
+        console.error('Gagal menyambungkan dompet:', error);
 
         // Reset state jika gagal
         resetWalletState();
@@ -147,15 +117,14 @@ async function connectWallet() {
 }
 
 /**
- * Disconnect wallet (reset state)
+ * Memutuskan sesi koneksi dompet pada sisi aplikasi.
  * 
- * PENJELASAN:
- * MetaMask tidak menyediakan fungsi disconnect secara native.
- * Yang bisa kita lakukan adalah mereset state aplikasi kita.
- * User harus disconnect manual dari MetaMask jika ingin benar-benar putus.
+ * Deskripsi:
+ * Karena MetaMask tidak menyediakan fungsi pemutusan koneksi secara native,
+ * prosedur ini difokuskan pada pembersihan status (state) internal aplikasi.
+ * Pengguna disarankan untuk memutuskan koneksi secara manual melalui MetaMask untuk keamanan penuh.
  */
 function disconnectWallet() {
-    console.log('🔌 Memutus koneksi wallet...');
     resetWalletState();
     localStorage.removeItem('dona_wallet_connected');
     localStorage.removeItem('dona_wallet_address');
@@ -163,11 +132,10 @@ function disconnectWallet() {
     // Trigger event untuk update UI
     window.dispatchEvent(new CustomEvent('walletDisconnected'));
 
-    console.log('✅ Wallet terputus');
 }
 
 /**
- * Reset state wallet ke kondisi awal
+ * Mengembalikan variabel status dompet ke kondisi semula.
  */
 function resetWalletState() {
     WalletState.isConnected = false;
@@ -177,19 +145,17 @@ function resetWalletState() {
     WalletState.isCorrectNetwork = false;
 }
 
-// ============================================
-// NETWORK MANAGEMENT - Pengelolaan Jaringan
-// ============================================
+
+// PENGELOLAAN JARINGAN
+
 
 /**
- * Cek apakah user di jaringan Sepolia
+ * Memvalidasi apakah akun pengguna berada pada jaringan Sepolia.
  * 
- * @returns {Promise<boolean>} true jika di Sepolia
+ * @returns {Promise<boolean>} True jika berada pada jaringan Sepolia.
  * 
- * PENJELASAN:
- * Setiap blockchain memiliki chainId unik.
- * Sepolia memiliki chainId 11155111 (0xaa36a7 dalam hex).
- * Kita bandingkan chainId user dengan chainId Sepolia.
+ * Deskripsi:
+ * Membandingkan Chain ID pengguna dengan Chain ID Sepolia (11155111 atau 0xaa36a7).
  */
 async function checkNetwork() {
     try {
@@ -200,26 +166,25 @@ async function checkNetwork() {
         const config = window.DonaConfig;
         const isCorrect = chainId === config.NETWORK_CONFIG.chainId;
 
-        console.log('🌐 Current chain:', chainId, '| Expected:', config.NETWORK_CONFIG.chainId);
 
         return isCorrect;
 
     } catch (error) {
-        console.error('❌ Gagal cek jaringan:', error);
+        console.error('Gagal memeriksa status jaringan:', error);
         return false;
     }
 }
 
 /**
- * Minta user untuk switch ke jaringan Sepolia
+ * Meminta pengguna untuk mengalihkan koneksi ke jaringan Sepolia.
  * 
- * @returns {Promise<boolean>} true jika berhasil switch
+ * @returns {Promise<boolean>} True jika proses pengalihan berhasil.
  * 
- * PENJELASAN FLOW:
- * 1. Coba switch ke Sepolia dengan wallet_switchEthereumChain
- * 2. Jika Sepolia belum ada di MetaMask user, akan error 4902
- * 3. Jika error 4902, tambahkan Sepolia dulu dengan wallet_addEthereumChain
- * 4. Setelah ditambahkan, coba switch lagi
+ * Alur Kerja:
+ * 1. Mencoba mengalihkan jaringan menggunakan metode wallet_switchEthereumChain.
+ * 2. Jika jaringan belum terdaftar, menangkap kesalahan dengan kode 4902.
+ * 3. Mendaftarkan jaringan Sepolia menggunakan metode wallet_addEthereumChain.
+ * 4. Melakukan percobaan pengalihan ulang setelah pendaftaran.
  */
 async function switchToSepolia() {
     const config = window.DonaConfig;
@@ -232,13 +197,11 @@ async function switchToSepolia() {
         });
 
         WalletState.isCorrectNetwork = true;
-        console.log('✅ Berhasil switch ke Sepolia');
         return true;
 
     } catch (switchError) {
         // Error 4902 berarti chain belum ditambahkan ke MetaMask
         if (switchError.code === 4902) {
-            console.log('📥 Menambahkan jaringan Sepolia ke MetaMask...');
 
             try {
                 // Tambahkan Sepolia ke MetaMask
@@ -254,12 +217,11 @@ async function switchToSepolia() {
                 });
 
                 WalletState.isCorrectNetwork = true;
-                console.log('✅ Sepolia berhasil ditambahkan dan diaktifkan');
                 return true;
 
             } catch (addError) {
-                console.error('❌ Gagal menambahkan Sepolia:', addError);
-                throw new Error('Gagal menambahkan jaringan Sepolia ke MetaMask');
+                console.error('Gagal menambahkan jaringan Sepolia:', addError);
+                throw new Error('Gagal menambahkan konfigurasi jaringan Sepolia ke MetaMask');
             }
         }
 
@@ -272,19 +234,16 @@ async function switchToSepolia() {
     }
 }
 
-// ============================================
-// EVENT LISTENERS - Pendengar Event
-// ============================================
+
+// PENDENGAR KEJADIAN (EVENT LISTENERS)
+
 
 /**
- * Setup event listeners untuk perubahan wallet
+ * Menyiapkan pendengar kejadian (event listeners) untuk perubahan status dompet.
  * 
- * PENJELASAN:
- * MetaMask emit event saat:
- * 1. User ganti akun (accountsChanged)
- * 2. User ganti jaringan (chainChanged)
- * 
- * Kita perlu menangani event ini untuk update UI dan state
+ * Deskripsi:
+ * Menangani kejadian 'accountsChanged' saat pengguna mengganti akun, 
+ * dan 'chainChanged' saat pengguna mengganti jaringan blockchain.
  */
 function setupWalletListeners() {
     // Hapus listener lama untuk mencegah duplikasi
@@ -295,22 +254,18 @@ function setupWalletListeners() {
     window.ethereum.on('accountsChanged', handleAccountsChanged);
     window.ethereum.on('chainChanged', handleChainChanged);
 
-    console.log('👂 Wallet event listeners aktif');
 }
 
 /**
- * Handler saat akun berubah
+ * Menangani perubahan akun yang aktif pada MetaMask.
  * 
- * @param {string[]} accounts - Array akun baru
+ * @param {string[]} accounts - Kumpulan alamat akun yang baru.
  * 
- * PENJELASAN:
- * Jika user ganti akun di MetaMask, kita perlu:
- * 1. Update state dengan akun baru
- * 2. Jika tidak ada akun (user disconnect), reset state
- * 3. Trigger event untuk update UI
+ * Deskripsi:
+ * Memperbarui status aplikasi berdasarkan akun yang baru dipilih atau 
+ * mereset status jika tidak ada akun yang terhubung.
  */
 async function handleAccountsChanged(accounts) {
-    console.log('🔄 Akun berubah:', accounts);
 
     if (accounts.length === 0) {
         // User disconnect dari MetaMask
@@ -336,18 +291,15 @@ async function handleAccountsChanged(accounts) {
 }
 
 /**
- * Handler saat jaringan berubah
+ * Menangani perubahan jaringan blockchain pada MetaMask.
  * 
- * @param {string} chainId - Chain ID baru dalam hex
+ * @param {string} chainId - ID jaringan baru dalam format heksadesimal.
  * 
- * PENJELASAN:
- * Jika user ganti jaringan, kita perlu:
- * 1. Cek apakah jaringan baru adalah Sepolia
- * 2. Update state isCorrectNetwork
- * 3. Jika bukan Sepolia, tampilkan warning dan minta switch
+ * Deskripsi:
+ * Memvalidasi apakah jaringan baru sesuai dengan konfigurasi Sepolia 
+ * dan memicu pembaharuan antarmuka pengguna.
  */
 async function handleChainChanged(chainId) {
-    console.log('🔄 Jaringan berubah ke:', chainId);
 
     const config = window.DonaConfig;
     const isCorrect = chainId === config.NETWORK_CONFIG.chainId;
@@ -364,13 +316,13 @@ async function handleChainChanged(chainId) {
 
     // Jika jaringan salah, tampilkan warning
     if (!isCorrect) {
-        console.warn('⚠️ Jaringan salah! Harap gunakan Sepolia.');
+        console.warn('Peringatan: Jaringan tidak sesuai. Harap gunakan jaringan Sepolia.');
     }
 }
 
-// ============================================
-// UTILITY FUNCTIONS - Fungsi Utilitas
-// ============================================
+
+// FUNGSI UTILITAS
+
 
 /**
  * Ambil alamat wallet yang terkoneksi
@@ -436,12 +388,11 @@ function formatAddress(address) {
 }
 
 /**
- * Coba reconnect jika sudah pernah connect sebelumnya
+ * Melakukan percobaan penyambungan kembali ke dompet jika sesi sebelumnya pernah tercatat.
  * 
- * PENJELASAN:
- * Fungsi ini dipanggil saat halaman dimuat.
- * Jika user sudah pernah connect dan masih terkoneksi di MetaMask,
- * kita bisa langsung ambil akun tanpa meminta izin lagi.
+ * Deskripsi:
+ * Fungsi ini dijalankan secara otomatis saat halaman pertama kali dimuat untuk memastikan 
+ * kesinambungan sesi koneksi pengguna tanpa harus memicu jendela sembul kembali.
  */
 async function tryReconnect() {
     try {
@@ -453,7 +404,6 @@ async function tryReconnect() {
         });
 
         if (accounts.length > 0) {
-            console.log('🔄 Reconnecting ke wallet yang sudah terkoneksi...');
             await connectWallet();
             return true;
         }
@@ -461,7 +411,7 @@ async function tryReconnect() {
         return false;
 
     } catch (error) {
-        console.error('❌ Gagal reconnect:', error);
+        console.error('Gagal menyambungkan kembali dompet:', error);
         return false;
     }
 }
@@ -493,47 +443,37 @@ async function getBalance() {
         return ethers.formatEther(balance);
 
     } catch (error) {
-        console.error('❌ Gagal mengambil saldo:', error);
+        console.error('Gagal mengambil saldo akun:', error);
         return '0';
     }
 }
 
-// ============================================
-// EXPORT FUNCTIONS
-// ============================================
-
 /**
- * Export semua fungsi wallet ke global scope
- * 
- * PENGGUNAAN DI FILE LAIN:
- * - await window.DonaWallet.connectWallet()
- * - window.DonaWallet.getWalletAddress()
- * - dll
+ * Ekspor fungsi dompet ke lingkup global.
  */
 window.DonaWallet = {
-    // Connection
+    // Koneksi
     connectWallet,
     disconnectWallet,
     tryReconnect,
 
-    // State getters
+    // Akses Status
     getWalletAddress,
     isWalletConnected,
     getSigner,
     getProvider,
     getBalance,
 
-    // Network
+    // Jaringan
     checkNetwork,
     switchToSepolia,
 
-    // Utilities
+    // Utilitas
     isMetaMaskInstalled,
     isAdmin,
     formatAddress,
 
-    // Raw state (untuk debugging)
+    // Status Mentah (untuk keperluan debugging)
     getState: () => ({ ...WalletState })
 };
 
-console.log('✅ Donachain Wallet module loaded successfully');

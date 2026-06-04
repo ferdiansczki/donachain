@@ -1,54 +1,25 @@
 /**
- * @file app.js
- * @description Main Application Orchestrator - Modul utama yang mengorkestrasi semua modul lainnya
- * 
- * FILE INI MENANGANI:
- * 1. Inisialisasi aplikasi
- * 2. Event listeners untuk interaksi user
- * 3. Koordinasi antar modul (wallet, contract, ui)
- * 4. Page-specific initialization
- * 
- * DEPENDENCY:
- * - config.js (konfigurasi)
- * - wallet.js (koneksi wallet)
- * - contract.js (interaksi kontrak)
- * - ui.js (manipulasi DOM)
- * 
- * @author Donachain Team
+ * Orkestrator utama aplikasi Donachain: inisialisasi status, modul, dan manajemen halaman.
  */
 
-// ============================================
-// APPLICATION STATE - State Aplikasi
-// ============================================
+// Status Aplikasi
 
 /**
- * State global aplikasi
+ * Status global aplikasi
  */
 const AppState = {
-    currentPage: null,      // Halaman saat ini
-    isInitialized: false,   // Status inisialisasi
-    currentCampaignId: null // ID kampanye (untuk halaman detail)
+    currentPage: null,      // Menyimpan nama halaman saat ini
+    isInitialized: false,   // Menyimpan status apakah inisialisasi selesai
+    currentCampaignId: null // Menyimpan ID kampanye untuk halaman detail
 };
 
-// ============================================
-// INITIALIZATION - Inisialisasi
-// ============================================
+// Inisialisasi Aplikasi
 
-/**
- * Inisialisasi aplikasi saat DOM loaded
- * 
- * PENJELASAN FLOW:
- * 1. Deteksi halaman saat ini
- * 2. Inisialisasi read contracts
- * 3. Setup event listeners global
- * 4. Coba reconnect wallet (jika sudah pernah connect)
- * 5. Load data sesuai halaman
- */
+// Inisialisasi aplikasi: deteksi halaman, koneksi kontrak, dan pemuatan data awal.
 async function initApp() {
     try {
-        console.log('🚀 Initializing Donachain App...');
 
-        // EXPERIMENTAL: Optimistic UI Update
+        // Eksperimental: Pembaruan antarmuka secara optimis (Optimistic UI)
         if (localStorage.getItem('dona_wallet_connected') === 'true') {
             const connectBtn = document.getElementById('connect-wallet-btn');
             const walletInfo = document.getElementById('wallet-info');
@@ -95,12 +66,12 @@ async function initApp() {
         await loadPageData();
 
         AppState.isInitialized = true;
-        console.log('✅ Donachain App initialized successfully');
+        console.log('Inisialisasi aplikasi Donachain berhasil diselesaikan.');
 
     } catch (error) {
-        console.error('❌ Failed to initialize app:', error);
+        console.error('Terjadi kesalahan saat menginisialisasi aplikasi:', error);
         
-        // Tampilkan error yang jelas ke user
+        // Menampilkan pesan kesalahan secara formal kepada pengguna
         Swal.fire({
             icon: 'error',
             title: 'Koneksi Bermasalah',
@@ -116,7 +87,7 @@ async function initApp() {
 }
 
 /**
- * Deteksi halaman saat ini berdasarkan URL
+ * Mendeteksi halaman saat ini berdasarkan segmen URL.
  */
 function detectCurrentPage() {
     const path = window.location.pathname;
@@ -171,15 +142,9 @@ function detectCurrentPage() {
         AppState.currentPage = 'about';
     }
 
-    console.log('📍 Current page detected:', AppState.currentPage, '(Filename:', filename, ')');
 }
 
-/**
- * Setup event listeners global
- * 
- * PENJELASAN:
- * Event listeners yang berlaku di semua halaman
- */
+// Event listeners global untuk navigasi dan wallet
 function setupGlobalEventListeners() {
     // Initialize Mobile Menu
     window.DonaUI.initMobileMenu();
@@ -221,7 +186,7 @@ function setupGlobalEventListeners() {
 }
 
 /**
- * Setup event listeners spesifik per halaman
+ * Menyiapkan penangan kejadian (event listeners) spesifik untuk setiap halaman.
  */
 function setupPageEventListeners() {
     switch (AppState.currentPage) {
@@ -241,7 +206,7 @@ function setupPageEventListeners() {
 }
 
 /**
- * Setup event listeners untuk halaman detail
+ * Menyiapkan penangan kejadian (event listeners) untuk halaman detail kampanye.
  */
 function setupDetailPageListeners() {
     // Form donasi
@@ -331,7 +296,7 @@ function setupDetailPageListeners() {
 }
 
 /**
- * Setup event listeners untuk halaman campaigns
+ * Menyiapkan penangan kejadian (event listeners) untuk halaman daftar kampanye.
  */
 function setupCampaignsPageListeners() {
     // Search input
@@ -354,7 +319,7 @@ function setupCampaignsPageListeners() {
 }
 
 /**
- * Setup event listeners untuk halaman audit-detail
+ * Menyiapkan penangan kejadian (event listeners) untuk halaman detail audit.
  */
 function setupAuditDetailPageListeners() {
     // Filter tabs
@@ -392,7 +357,7 @@ function setupAuditDetailPageListeners() {
 }
 
 /**
- * Setup event listeners untuk halaman admin
+ * Menyiapkan penangan kejadian (event listeners) untuk halaman administrasi.
  */
 function setupAdminPageListeners() {
     // Form buat kampanye
@@ -430,12 +395,10 @@ function setupAdminPageListeners() {
     }
 }
 
-// ============================================
-// DATA LOADING - Load Data per Halaman
-// ============================================
+// Pemuatan data per halaman
 
 /**
- * Load data sesuai halaman saat ini
+ * Memuat data yang sesuai dengan status halaman saat ini.
  */
 async function loadPageData() {
     switch (AppState.currentPage) {
@@ -469,12 +432,9 @@ async function loadPageData() {
     }
 }
 
-/**
- * Load data untuk homepage (Urgent campaigns)
- */
+// Memuat data kampanye mendesak untuk homepage
 async function loadHomepageData() {
     try {
-        console.log('🔄 Loading homepage data...');
         const startTime = Date.now();
 
         // Load data concurrently for better performance
@@ -484,7 +444,6 @@ async function loadHomepageData() {
             window.DonaContract.getStats()
         ]);
 
-        console.log(`⏱️ Data fetched in ${Date.now() - startTime}ms`);
 
         // 1. Fetch votes for all active campaigns
         const campaignsWithVotes = await Promise.all(allCampaigns.map(async c => {
@@ -548,10 +507,9 @@ async function loadHomepageData() {
         // Render stats
         window.DonaUI.renderTransparencyStats(stats);
 
-        console.log('✅ Homepage data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load homepage data:', error);
+        console.error('Gagal memuat data halaman utama:', error);
         if (window.DonaUI) {
             window.DonaUI.showToast('Gagal memuat data beranda. Mencoba lagi...', 'warning');
             // Auto retry once after 3 seconds?
@@ -563,7 +521,7 @@ async function loadHomepageData() {
 }
 
 /**
- * Load data untuk halaman campaigns (all campaigns)
+ * Memuat data untuk halaman daftar kampanye.
  */
 async function loadCampaignsPageData() {
     try {
@@ -588,15 +546,14 @@ async function loadCampaignsPageData() {
         // Ensure filterCampaigns uses the default 'active' from DOM
         filterCampaigns();
 
-        console.log('✅ Campaigns page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load campaigns page data:', error);
+        console.error('Gagal memuat data halaman kampanye:', error);
     }
 }
 
 /**
- * Load data untuk halaman detail kampanye
+ * Memuat data untuk halaman detail kampanye.
  */
 async function loadDetailPageData_OLD() {
     try {
@@ -605,11 +562,11 @@ async function loadDetailPageData_OLD() {
             return;
         }
 
-        console.log('🔄 Loading detail page data...');
+        console.log('Memuat data halaman detail...');
 
         const campaignId = AppState.currentCampaignId;
 
-        console.log('🔄 Loading detail page data...');
+        console.log('Memuat data halaman detail...');
 
         // Fetch campaign and donations concurrently
         const [campaign, donations] = await Promise.all([
@@ -696,17 +653,15 @@ async function loadDetailPageData_OLD() {
             }
         }
 
-        console.log('✅ Detail page data loaded & rendered');
 
     } catch (error) {
-        console.error('❌ Failed to load detail page data:', error);
+        console.error('Terjadi kesalahan saat memuat data halaman detail:', error);
         window.DonaUI.showErrorModal('Error', 'Gagal memuat data kampanye');
     }
 }
 
 /**
- * Load voting data - DEPRECATED (Merged into loadDetailPageData)
- * Keeping empty function to avoid reference errors if called elsewhere
+ * Memuat data voting - USANG (Digabungkan ke dalam loadDetailPageData).
  */
 async function loadVotingData(campaignId) {
     try {
@@ -765,7 +720,7 @@ async function loadVotingData(campaignId) {
 }
 
 /**
- * Handle vote click
+ * Menangani klik tombol pemilihan (vote).
  */
 async function handleVoteClick() {
     try {
@@ -829,7 +784,6 @@ async function handleVoteClick() {
  */
 async function loadAuditPageData() {
     try {
-        console.log('🔄 Loading audit page data...');
         const startTime = Date.now();
 
         // Load all data concurrently
@@ -855,10 +809,9 @@ async function loadAuditPageData() {
         // Render stats
         window.DonaUI.renderTransparencyStats(stats);
 
-        console.log('✅ Audit page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load audit page data:', error);
+        console.error('Gagal memuat data halaman audit:', error);
     }
 }
 
@@ -867,7 +820,6 @@ async function loadAuditPageData() {
  */
 async function loadAuditDetailPageData() {
     try {
-        console.log('🔄 Loading audit detail data...');
         
         // Tampilkan loading state jika UI module memungkinkan
         if (window.DonaUI && window.DonaUI.showLoading) {
@@ -955,7 +907,7 @@ async function loadAuditDetailPageData() {
         }
 
     } catch (error) {
-        console.error('❌ Failed to load audit detail page data:', error);
+        console.error('Gagal memuat detail data halaman audit:', error);
         
         if (window.DonaUI && window.DonaUI.hideLoading) {
             window.DonaUI.hideLoading();
@@ -986,7 +938,6 @@ async function loadProfilePageData() {
 
         const address = wallet.getWalletAddress();
 
-        console.log('🔄 Loading profile data (parallel)...');
         const startTime = Date.now();
 
         // Load data concurrently
@@ -996,7 +947,6 @@ async function loadProfilePageData() {
             window.DonaContract.getDonationsByDonor(address)
         ]);
 
-        console.log(`⏱️ Profile data fetched in ${Date.now() - startTime}ms`);
 
         // Render UI
         window.DonaUI.renderNFTGallery(nfts);
@@ -1013,10 +963,9 @@ async function loadProfilePageData() {
         const addressEl = document.getElementById('profile-address');
         if (addressEl) addressEl.textContent = address;
 
-        console.log('✅ Profile page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load profile page data:', error);
+        console.error('Gagal memuat data halaman profil:', error);
     }
 }
 
@@ -1060,36 +1009,64 @@ async function loadAdminPageData() {
         }
 
         // Load semua kampanye untuk admin
-        const campaigns = await window.DonaContract.getCampaigns();
+        const [campaigns, allExpenses] = await Promise.all([
+            window.DonaContract.getCampaigns(),
+            window.DonaContract.getAllExpenses()
+        ]);
+
         // Sort by newest (descending ID)
         campaigns.sort((a, b) => b.id - a.id);
         window.DonaUI.renderAdminCampaignTable(campaigns);
 
-        // Populate campaign selector for withdraw
+        // Populate campaign selector for withdraw (Salurkan Dana)
         const campaignSelect = document.getElementById('withdraw-campaign-id');
+        const amountInput = document.getElementById('withdraw-amount');
+
         if (campaignSelect) {
-            let options = '<option value="" disabled selected>-</option>';
-            // Sort by newest first
-            [...campaigns].sort((a, b) => b.id - a.id).forEach(c => {
-                options += `<option value="${c.id}">#${c.id} - ${c.title}</option>`;
+            // Group expenses by campaignId
+            const campaignSpent = {};
+            allExpenses.forEach(e => {
+                if (e.campaignId) {
+                    campaignSpent[e.campaignId] = (campaignSpent[e.campaignId] || 0) + parseFloat(e.amount);
+                }
+            });
+
+            // Calculate balance for each campaign and filter
+            const campaignsWithBalance = campaigns.map(c => {
+                const spent = campaignSpent[c.id] || 0;
+                const balance = Math.max(0, parseFloat(c.totalRaised) - spent);
+                return { ...c, balance };
+            }).filter(c => c.balance > 0);
+
+            let options = '<option value="" disabled selected>Pilih Kampanye...</option>';
+            campaignsWithBalance.forEach(c => {
+                options += `<option value="${c.id}" data-balance="${c.balance}">#${c.id} - ${c.title} (Sisa: ${c.balance.toFixed(4)} ETH)</option>`;
             });
             campaignSelect.innerHTML = options;
+
+            // Add change listener to update amount input
+            campaignSelect.onchange = function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const balance = selectedOption.dataset.balance;
+                if (amountInput) {
+                    amountInput.value = balance;
+                }
+            };
         }
 
         // Load statistik
         const stats = await window.DonaContract.getStats();
         window.DonaUI.renderTransparencyStats(stats);
 
-        console.log('✅ Admin page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load admin page data:', error);
+        console.error('Gagal memuat data halaman administrasi:', error);
     }
 }
 
-// ============================================
+
 // STATISTIK DONATUR PAGE - Halaman Statistik Donatur
-// ============================================
+
 
 // State untuk leaderboard
 const LeaderboardState = {
@@ -1103,7 +1080,6 @@ const LeaderboardState = {
  */
 async function loadLeaderboardPageData() {
     try {
-        console.log('📊 Loading statistik donatur page data...');
 
         // Load all donations
         const donations = await window.DonaContract.getAllDonations();
@@ -1135,10 +1111,9 @@ async function loadLeaderboardPageData() {
         // Show user position if connected
         showUserPosition();
 
-        console.log('✅ Statistik donatur page data loaded');
 
     } catch (error) {
-        console.error('❌ Failed to load statistik donatur page data:', error);
+        console.error('Gagal memuat data halaman statistik donatur:', error);
     }
 }
 
@@ -1300,9 +1275,9 @@ function showConnectWalletPrompt() {
     `;
 }
 
-// ============================================
+
 // WALLET HANDLERS - Handler Wallet
-// ============================================
+
 
 /**
  * Handler untuk tombol Connect Wallet
@@ -1405,9 +1380,9 @@ function updateWalletStatus() {
     window.DonaUI.updateWalletUI(isConnected, address);
 }
 
-// ============================================
+
 // DONATION HANDLERS - Handler Donasi
-// ============================================
+
 
 /**
  * Handler untuk submit form donasi
@@ -1474,9 +1449,9 @@ async function handleDonateSubmit(event) {
     }
 }
 
-// ============================================
+
 // ADMIN HANDLERS - Handler Admin
-// ============================================
+
 
 /**
  * Handler untuk submit form buat kampanye (dengan deadline)
@@ -1525,7 +1500,6 @@ async function handleCreateCampaign(event) {
 
             // Upload to Pinata
             imageCID = await window.DonaIPFS.uploadToPinata(file);
-            console.log('Image uploaded to IPFS:', imageCID);
         }
 
         window.DonaUI.showLoading('Membuat kampanye di Blockchain...');
@@ -1583,8 +1557,8 @@ async function handleWithdraw(event) {
 
     // Konfirmasi
     const confirmed = await window.DonaUI.showConfirm(
-        'Konfirmasi Penarikan',
-        `Anda akan menarik ${amount} ETH ke ${window.DonaWallet.formatAddress(recipient)}. Dana akan tercatat sebagai pengeluaran untuk transparansi. Lanjutkan?`
+        'Konfirmasi Penyaluran Dana',
+        `Anda akan menyalurkan dana sebesar ${amount} ETH ke ${window.DonaWallet.formatAddress(recipient)}. Transaksi ini akan tercatat dalam log pengeluaran untuk transparansi publik. Lanjutkan?`
     );
 
     if (!confirmed) return;
@@ -1633,9 +1607,9 @@ async function toggleCampaignStatus(campaignId, isActive) {
     }
 }
 
-// ============================================
+
 // HELPER FUNCTIONS - Fungsi Pembantu
-// ============================================
+
 
 /**
  * Filter campaigns based on search, status and sort
@@ -2017,9 +1991,9 @@ function renderCampaignExpensesTable(expenses) {
         `).join('');
 }
 
-// ============================================
+
 // CSV DOWNLOAD - Download Data Transparansi
-// ============================================
+
 
 /**
  * Escape CSV value - always wrap in quotes for maximum Excel compatibility
@@ -2156,7 +2130,7 @@ async function downloadAllCSV() {
         window.DonaUI.hideLoading();
         window.DonaUI.showToast(`${transactions.length} transaksi berhasil didownload`, 'success');
     } catch (error) {
-        console.error('❌ Download CSV error:', error);
+        console.error('Terjadi kesalahan saat mengunduh CSV:', error);
         window.DonaUI.hideLoading();
         window.DonaUI.showToast('Gagal mendownload CSV', 'error');
     }
@@ -2193,7 +2167,7 @@ async function downloadIncomingCSV() {
         window.DonaUI.hideLoading();
         window.DonaUI.showToast(`${transactions.length} donasi berhasil didownload`, 'success');
     } catch (error) {
-        console.error('❌ Download CSV error:', error);
+        console.error('Terjadi kesalahan saat mengunduh CSV:', error);
         window.DonaUI.hideLoading();
         window.DonaUI.showToast('Gagal mendownload CSV', 'error');
     }
@@ -2230,7 +2204,7 @@ async function downloadOutgoingCSV() {
         window.DonaUI.hideLoading();
         window.DonaUI.showToast(`${transactions.length} pengeluaran berhasil didownload`, 'success');
     } catch (error) {
-        console.error('❌ Download CSV error:', error);
+        console.error('Terjadi kesalahan saat mengunduh CSV:', error);
         window.DonaUI.hideLoading();
         window.DonaUI.showToast('Gagal mendownload CSV', 'error');
     }
@@ -2299,7 +2273,7 @@ async function downloadCampaignCSV(campaignId) {
         window.DonaUI.hideLoading();
         window.DonaUI.showToast(`${transactions.length} transaksi kampanye berhasil didownload`, 'success');
     } catch (error) {
-        console.error('❌ Download Campaign CSV error:', error);
+        console.error('Gagal mengunduh berkas CSV kampanye:', error);
         window.DonaUI.hideLoading();
         window.DonaUI.showToast('Gagal mendownload CSV kampanye', 'error');
     }
@@ -2337,15 +2311,15 @@ async function downloadAuditPageCSV() {
         window.DonaUI.hideLoading();
         window.DonaUI.showToast(`${transactions.length} transaksi berhasil didownload`, 'success');
     } catch (error) {
-        console.error('❌ Download Audit CSV error:', error);
+        console.error('Gagal mengunduh berkas CSV audit:', error);
         window.DonaUI.hideLoading();
         window.DonaUI.showToast('Gagal mendownload CSV', 'error');
     }
 }
 
-// ============================================
+
 // EXPORT FUNCTIONS
-// ============================================
+
 
 /**
  * Export fungsi aplikasi ke global scope
@@ -2383,9 +2357,9 @@ window.DonaApp = {
     getState: () => ({ ...AppState })
 };
 
-// ============================================
+
 // AUTO INITIALIZE
-// ============================================
+
 
 /**
  * Jalankan inisialisasi saat DOM loaded
@@ -2393,7 +2367,7 @@ window.DonaApp = {
 document.addEventListener('DOMContentLoaded', initApp);
 
 
-console.log('✅ Donachain App module loaded successfully');
+console.log('Modul Aplikasi Donachain berhasil dimuat.');
 
 async function loadDetailPageData() {
     try {
@@ -2437,10 +2411,10 @@ async function loadDetailPageData() {
         // Load Voting Data
         loadVotingData(AppState.currentCampaignId);
 
-        console.log('✅ Detail page data loaded');
+        console.log('Data halaman detail berhasil dimuat.');
 
     } catch (error) {
-        console.error('❌ Failed to load detail page data:', error);
+        console.error('Terjadi kesalahan saat memuat data halaman detail:', error);
         window.DonaUI.showErrorModal('Error', 'Gagal memuat data kampanye');
     }
 }

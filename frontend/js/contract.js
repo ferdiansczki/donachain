@@ -1,32 +1,10 @@
 /**
- * @file contract.js
- * @description Modul untuk interaksi dengan Smart Contract Donachain
- * 
- * FILE INI MENANGANI:
- * 1. Inisialisasi instance kontrak
- * 2. Membaca data dari blockchain (view functions)
- * 3. Menulis data ke blockchain (write functions)
- * 4. Format data dari/ke kontrak
- * 
- * DEPENDENCY:
- * - config.js (alamat dan ABI kontrak)
- * - wallet.js (provider dan signer)
- * - ethers.js (dari CDN)
- * 
- * @author Donachain Team
+ * Modul interaksi smart contract Donachain: Inisialisasi, pembacaan data, dan eksekusi transaksi.
  */
 
-// ============================================
-// CONTRACT INSTANCES - Instance Kontrak
-// ============================================
+// Instansi kontrak untuk operasi baca (read) dan tulis (write)
 
-/**
- * Instance kontrak yang akan digunakan
- * 
- * PENJELASAN:
- * - readContract: Kontrak dengan provider (hanya baca)
- * - writeContract: Kontrak dengan signer (bisa tulis)
- */
+// Variabel penyimpan referensi kontrak
 let donationManagerRead = null;
 let donationManagerWrite = null;
 let nftContractRead = null;
@@ -35,18 +13,9 @@ let votingContractRead = null;
 let votingContractWrite = null;
 let currentRpcIndex = 0; // Melacak index RPC yang sedang digunakan
 
-// ============================================
-// INITIALIZATION - Inisialisasi
-// ============================================
+// Inisialisasi Kontrak
 
-/**
- * Inisialisasi kontrak untuk operasi baca (view)
- * 
- * PENJELASAN:
- * Kontrak read menggunakan provider publik sehingga
- * bisa digunakan bahkan tanpa koneksi wallet.
- * Ini untuk menampilkan data kampanye, donasi, dll.
- */
+// Inisialisasi kontrak untuk pembacaan data publik tanpa harus connect wallet
 async function initReadContracts(startIndex = 0) {
     const config = window.DonaConfig;
     const rpcUrls = config.NETWORK_CONFIG.rpcUrls;
@@ -56,7 +25,6 @@ async function initReadContracts(startIndex = 0) {
     for (let i = 0; i < rpcUrls.length; i++) {
         const index = (startIndex + i) % rpcUrls.length;
         try {
-            console.log(`🔗 Mencoba RPC ${index + 1}/${rpcUrls.length}: ${rpcUrls[index].substring(0, 45)}...`);
 
             // OPTIMISASI: Gunakan staticNetwork agar Ethers tidak melakukan request eth_chainId tambahan
             const provider = new ethers.JsonRpcProvider(rpcUrls[index], chainId, {
@@ -91,12 +59,11 @@ async function initReadContracts(startIndex = 0) {
             );
 
             currentRpcIndex = index;
-            console.log(`✅ Read contracts initialized (RPC ${index + 1})`);
             return true;
 
         } catch (error) {
             const errorMsg = error.message.toLowerCase();
-            console.warn(`⚠️ RPC ${index + 1} gagal: ${error.message}`);
+            console.warn(`Peringatan: RPC ${index + 1} gagal merespons: ${error.message}`);
             
             // Jika error karena auth/API key, langsung lanjut ke RPC berikutnya
             if (errorMsg.includes('unauthorized') || errorMsg.includes('api key')) {
@@ -105,23 +72,18 @@ async function initReadContracts(startIndex = 0) {
         }
     }
 
-    console.error('❌ Semua RPC gagal.');
+    console.error('Terjadi kesalahan: Seluruh titik akhir RPC gagal merespons.');
     return false;
 }
 
-/**
- * Rotasi ke RPC berikutnya jika terjadi error
- */
+// Melakukan rotasi RPC otomatis jika koneksi bermasalah
 async function rotateRpc() {
-    console.log('🔄 Mendeteksi masalah koneksi, merotasi RPC...');
     const nextIndex = (currentRpcIndex + 1) % window.DonaConfig.NETWORK_CONFIG.rpcUrls.length;
     donationManagerRead = null; // Reset agar ensureReadContract memanggil init lagi
     return await initReadContracts(nextIndex);
 }
 
-/**
- * Pembungkus fungsi baca dengan mekanisme retry dan rotasi otomatis
- */
+// Pembungkus fungsi baca dengan mekanisme retry dan rotasi RPC
 async function readCallWithRetry(fnName, ...args) {
     const maxAttempts = 3; // Maksimal 3 kali rotasi
     let lastError = null;
@@ -154,7 +116,7 @@ async function readCallWithRetry(fnName, ...args) {
                                msg.includes('api key');
 
             if (isRetryable) {
-                console.warn(`⚠️ Percobaan ${attempt + 1} gagal (${fnName}): Masalah RPC. Mencoba rotasi...`);
+                console.warn(`Peringatan: Percobaan ${attempt + 1} gagal (${fnName}): Masalah pada RPC. Melakukan rotasi...`);
                 await rotateRpc();
                 // Tunggu sebentar sebelum mencoba lagi (backoff meningkat)
                 await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
@@ -167,17 +129,7 @@ async function readCallWithRetry(fnName, ...args) {
     throw lastError;
 }
 
-/**
- * Inisialisasi kontrak untuk operasi tulis
- * 
- * @returns {Promise<boolean>} true jika berhasil
- * 
- * PENJELASAN:
- * Kontrak write membutuhkan signer dari wallet yang terkoneksi.
- * Signer digunakan untuk menandatangani transaksi.
- * 
- * PENTING: Pastikan wallet sudah terkoneksi sebelum memanggil ini!
- */
+// Inisialisasi kontrak untuk transaksi (memerlukan koneksi dompet)
 async function initWriteContracts() {
     try {
         const config = window.DonaConfig;
@@ -211,49 +163,34 @@ async function initWriteContracts() {
             signer
         );
 
-        console.log('✅ Write contracts initialized');
         return true;
 
     } catch (error) {
-        console.error('❌ Gagal inisialisasi write contracts:', error);
+        console.error('Gagal menginisialisasi koneksi tulis kontrak:', error);
         return false;
     }
 }
 
-// ============================================
-// READ FUNCTIONS - Fungsi Baca Data
-// ============================================
+// Fungsi Pembacaan Data
 
-/**
- * Ambil semua kampanye dari blockchain
- * 
- * @returns {Promise<Array>} Array kampanye yang sudah diformat
- * 
- * PENJELASAN:
- * Memanggil fungsi getAllCampaigns() di smart contract.
- * Data dikembalikan dalam format yang lebih mudah digunakan frontend.
- */
+// Mengambil data seluruh kampanye dari blockchain
 async function getCampaigns() {
     try {
         const campaigns = await readCallWithRetry('getAllCampaigns');
         return campaigns.map(formatCampaign);
     } catch (error) {
-        console.error('❌ Gagal mengambil kampanye:', error);
+        console.error('Gagal mengambil data kampanye:', error);
         throw error;
     }
 }
 
-/**
- * Ambil kampanye yang masih aktif saja
- * 
- * @returns {Promise<Array>} Array kampanye aktif
- */
+// Mengambil hanya kampanye yang berstatus aktif
 async function getActiveCampaigns() {
     try {
         const campaigns = await readCallWithRetry('getActiveCampaigns');
         return campaigns.map(formatCampaign);
     } catch (error) {
-        console.error('❌ Gagal mengambil kampanye aktif:', error);
+        console.error('Gagal mengambil data kampanye aktif:', error);
         throw error;
     }
 }
@@ -269,7 +206,7 @@ async function getCampaignById(campaignId) {
         const campaign = await readCallWithRetry('getCampaign', campaignId);
         return formatCampaign(campaign);
     } catch (error) {
-        console.error('❌ Gagal mengambil kampanye:', error);
+        console.error('Gagal mengambil data kampanye:', error);
         throw error;
     }
 }
@@ -310,7 +247,7 @@ async function getAllDonations() {
         });
 
     } catch (error) {
-        console.error('❌ Gagal mengambil donasi:', error);
+        console.error('Gagal mengambil data donasi:', error);
         throw error;
     }
 }
@@ -347,7 +284,7 @@ async function getDonationsForCampaign(campaignId) {
         });
 
     } catch (error) {
-        console.error('❌ Gagal mengambil donasi kampanye:', error);
+        console.error('Gagal mengambil data donasi kampanye:', error);
         throw error;
     }
 }
@@ -385,7 +322,7 @@ async function getDonationsByDonor(address) {
         });
 
     } catch (error) {
-        console.error('❌ Gagal mengambil donasi user:', error);
+        console.error('Gagal mengambil data donasi pengguna:', error);
         throw error;
     }
 }
@@ -415,7 +352,7 @@ async function getAllExpenses() {
                 });
             }
         } catch (eventError) {
-            console.warn('⚠️ Tidak bisa fetch FundsWithdrawnWithLog events:', eventError.message);
+            console.warn('Peringatan: Tidak dapat mengambil kejadian FundsWithdrawnWithLog:', eventError.message);
         }
 
         // Format expense dengan txHash dari event jika ada, atau dari storage
@@ -430,7 +367,7 @@ async function getAllExpenses() {
         });
 
     } catch (error) {
-        console.error('❌ Gagal mengambil pengeluaran:', error);
+        console.error('Gagal mengambil data pengeluaran:', error);
         throw error;
     }
 }
@@ -471,7 +408,7 @@ async function getLeaderboard(count = 5) {
         return leaderboard;
 
     } catch (error) {
-        console.error('❌ Gagal mengambil statistik donatur:', error);
+        console.error('Gagal mengambil peringkat donatur:', error);
         throw error;
     }
 }
@@ -498,14 +435,14 @@ async function getStats() {
         };
 
     } catch (error) {
-        console.error('❌ Gagal mengambil statistik:', error);
+        console.error('Gagal mengambil statistik platform:', error);
         throw error;
     }
 }
 
-// ============================================
-// NFT READ FUNCTIONS - Fungsi Baca NFT
-// ============================================
+
+// OPERASI BACA NFT
+
 
 /**
  * Ambil NFT yang dimiliki user
@@ -564,7 +501,7 @@ async function getNFTsByOwner(address) {
         return nfts;
 
     } catch (error) {
-        console.error('❌ Gagal mengambil NFT:', error);
+        console.error('Gagal mengambil data NFT:', error);
         throw error;
     }
 }
@@ -579,14 +516,12 @@ async function getNFTTotalSupply() {
         const totalSupply = await readCallWithRetry('totalSupply');
         return Number(totalSupply);
     } catch (error) {
-        console.error('❌ Gagal mengambil total supply NFT:', error);
+        console.error('Gagal mengambil jumlah total NFT:', error);
         throw error;
     }
 }
 
-// ============================================
-// VOTING FUNCTIONS - Fungsi Voting
-// ============================================
+// Fungsi Pemilihan (Voting)
 
 /**
  * Vote kampanye menggunakan NFT
@@ -600,31 +535,23 @@ async function voteForCampaign(campaignId, tokenId) {
         await ensureWriteContract();
 
         if (!votingContractWrite) {
-            console.warn('⚠️ Voting contract not initialized, attempting re-init...');
             await initWriteContracts();
             if (!votingContractWrite) {
-                throw new Error('Voting contract failed to initialize. Please checking your configuration and wallet connection.');
+                throw new Error('Gagal menginisialisasi kontrak pemilihan. Silakan periksa konfigurasi dan koneksi dompet Anda.');
             }
         }
 
-        console.log(`🗳️ Voting campaign #${campaignId} dengan NFT #${tokenId}...`);
-
         const tx = await votingContractWrite.vote(campaignId, tokenId);
-
-        console.log('⏳ Menunggu konfirmasi voting...', tx.hash);
 
         // Add timeout for tx.wait() (60 seconds)
         const waitPromise = tx.wait();
         const timeoutPromise = new Promise((resolve) => {
             setTimeout(() => {
-                console.warn('⚠️ Transaction verification timed out, but likely sent.');
                 resolve({ status: 1, hash: tx.hash, timedOut: true }); // Mock receipt
             }, 60000);
         });
 
         const receipt = await Promise.race([waitPromise, timeoutPromise]);
-
-        console.log('✅ Vote berhasil (atau terkirim)!');
 
         return {
             success: receipt.status === 1,
@@ -632,7 +559,7 @@ async function voteForCampaign(campaignId, tokenId) {
             timedOut: receipt.timedOut
         };
     } catch (error) {
-        console.error('❌ Gagal melakukan voting:', error);
+        console.error('Gagal memproses pemilihan:', error);
 
         let errorMessage = 'Gagal melakukan voting';
 
@@ -657,7 +584,6 @@ async function voteForCampaign(campaignId, tokenId) {
             }
         }
 
-        console.error('Parsed error:', errorMessage);
         throw new Error(errorMessage);
     }
 }
@@ -673,7 +599,7 @@ async function getCampaignVotes(campaignId) {
         const votes = await readCallWithRetry('getVotes', campaignId);
         return Number(votes);
     } catch (error) {
-        console.error('❌ Gagal mengambil jumlah vote:', error);
+        console.error('Gagal mengambil jumlah suara:', error);
         return 0; 
     }
 }
@@ -689,7 +615,7 @@ async function checkHasVoted(tokenId) {
         const hasVoted = await readCallWithRetry('hasVoted', tokenId);
         return hasVoted;
     } catch (error) {
-        console.error('❌ Gagal cek status vote:', error);
+        console.error('Gagal memeriksa status pemilihan:', error);
         return false;
     }
 }
@@ -748,14 +674,12 @@ async function getVoteStats(campaignId) {
         return { ranking, todayVotes };
 
     } catch (error) {
-        console.error('❌ Gagal mengambil statistik vote:', error);
+        console.error('Gagal mengambil statistik pemilihan:', error);
         return { ranking: '-', todayVotes: 0 };
     }
 }
 
-// ============================================
-// WRITE FUNCTIONS - Fungsi Tulis Data
-// ============================================
+// Fungsi Transaksi (Write)
 
 /**
  * Kirim donasi ke kampanye
@@ -782,19 +706,13 @@ async function donate(campaignId, amountEth) {
         // Konversi ETH ke wei
         const amountWei = ethers.parseEther(amountEth);
 
-        console.log(`💰 Mengirim donasi ${amountEth} ETH ke kampanye #${campaignId}...`);
-
         // Panggil fungsi donate dengan value
         const tx = await donationManagerWrite.donate(campaignId, {
             value: amountWei
         });
 
-        console.log('⏳ Menunggu konfirmasi transaksi...', tx.hash);
-
         // Tunggu transaksi selesai
         const receipt = await tx.wait();
-
-        console.log('✅ Donasi berhasil!', receipt);
 
         return {
             success: true,
@@ -804,7 +722,7 @@ async function donate(campaignId, amountEth) {
         };
 
     } catch (error) {
-        console.error('❌ Gagal mengirim donasi:', error);
+        console.error('Gagal mengirim dana donasi:', error);
 
         // Parse error message
         let message = 'Gagal mengirim donasi';
@@ -834,8 +752,6 @@ async function createCampaign(title, description, imageCID, targetAmountEth, dea
 
         const targetWei = ethers.parseEther(targetAmountEth);
 
-        console.log('📝 Membuat kampanye baru...');
-
         const tx = await donationManagerWrite.createCampaign(
             title,
             description,
@@ -844,14 +760,10 @@ async function createCampaign(title, description, imageCID, targetAmountEth, dea
             deadline
         );
 
-        console.log('⏳ Menunggu konfirmasi...', tx.hash);
-
         const receipt = await tx.wait();
 
         // Parse event untuk ambil campaign ID
         const campaignId = receipt.logs[0]?.topics[1];
-
-        console.log('✅ Kampanye berhasil dibuat!');
 
         return {
             success: true,
@@ -860,7 +772,7 @@ async function createCampaign(title, description, imageCID, targetAmountEth, dea
         };
 
     } catch (error) {
-        console.error('❌ Gagal membuat kampanye:', error);
+        console.error('Gagal membuat kampanye baru:', error);
         throw new Error(error.reason || 'Gagal membuat kampanye');
     }
 }
@@ -884,8 +796,6 @@ async function withdrawWithLog(description, recipient, amountEth, campaignId = 0
 
         const amountWei = ethers.parseEther(amountEth);
 
-        console.log('💸 Menarik dana dengan catatan...');
-
         const tx = await donationManagerWrite.withdrawWithLog(
             description,
             recipient,
@@ -895,15 +805,13 @@ async function withdrawWithLog(description, recipient, amountEth, campaignId = 0
 
         const receipt = await tx.wait();
 
-        console.log('✅ Dana berhasil ditarik dan tercatat!');
-
         return {
             success: true,
             hash: receipt.hash
         };
 
     } catch (error) {
-        console.error('❌ Gagal menarik dana:', error);
+        console.error('Gagal menarik dana kampanye:', error);
         throw new Error(error.reason || 'Gagal menarik dana');
     }
 }
@@ -919,12 +827,8 @@ async function updateCampaignStatus(campaignId, isActive) {
     try {
         await ensureWriteContract();
 
-        console.log(`📝 Update status kampanye #${campaignId} ke ${isActive}...`);
-
         const tx = await donationManagerWrite.updateCampaignStatus(campaignId, isActive);
         const receipt = await tx.wait();
-
-        console.log('✅ Status kampanye diupdate!');
 
         return {
             success: true,
@@ -932,14 +836,14 @@ async function updateCampaignStatus(campaignId, isActive) {
         };
 
     } catch (error) {
-        console.error('❌ Gagal update status kampanye:', error);
+        console.error('Gagal memperbarui status kampanye:', error);
         throw new Error(error.reason || 'Gagal update status kampanye');
     }
 }
 
-// ============================================
+
 // DATA FORMATTING - Format Data
-// ============================================
+
 
 /**
  * Format data kampanye dari kontrak ke format frontend
@@ -1059,9 +963,9 @@ function getTimeAgo(timestamp) {
     return new Date(timestamp * 1000).toLocaleDateString('id-ID');
 }
 
-// ============================================
+
 // HELPER FUNCTIONS - Fungsi Pembantu
-// ============================================
+
 
 /**
  * Pastikan read contract sudah diinisialisasi
@@ -1084,9 +988,9 @@ async function ensureWriteContract() {
     }
 }
 
-// ============================================
+
 // EXPORT FUNCTIONS
-// ============================================
+
 
 /**
  * Export semua fungsi contract ke global scope
@@ -1142,4 +1046,3 @@ window.DonaContract = {
     getTimeAgo
 };
 
-console.log('✅ Donachain Contract module loaded successfully');

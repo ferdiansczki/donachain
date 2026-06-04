@@ -9,27 +9,12 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 
 /**
  * @title DonachainNFT
- * @dev Kontrak ERC-721 untuk "Impact Certificate" dengan sistem Tier dinamis
- * 
- * PENJELASAN KONTRAK:
- * Kontrak ini mengimplementasikan NFT sebagai bukti donasi (sertifikat).
- * Setiap kali user melakukan donasi >= 0.01 ETH, mereka akan menerima NFT
- * dengan tier yang sesuai berdasarkan jumlah donasi.
- * 
- * SISTEM TIER:
- * - Bronze: 0.01 - 0.049 ETH
- * - Silver: 0.05 - 0.099 ETH  
- * - Gold: >= 0.1 ETH
- * - Special: 1-5% random chance (apapun jumlah donasi)
- * 
- * @author Donachain Team
+ * @dev Kontrak pengelolaan Sertifikat Penghargaan Donatur (NFT) dengan sistem tier otomatis.
  */
 contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     using Strings for uint256;
     
-    // ============================================
-    // TIER CONSTANTS - Konstanta Tier
-    // ============================================
+    // KONSTANTA TINGKAT (TIER)
     
     /// @dev Tier types
     enum Tier { Bronze, Silver, Gold, Special }
@@ -43,9 +28,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     /// @dev Probabilitas Special tier (5% = 500 dari 10000)
     uint256 public constant SPECIAL_CHANCE = 500; // 5%
     
-    // ============================================
-    // IPFS CIDs - Content IDs untuk Gambar
-    // ============================================
+    // DATA IPFS
     
     /// @dev IPFS CID untuk tier Bronze
     string public constant BRONZE_CID = "bafybeifcs35wapkfuevf5x5ek222sjdjxknk5k2etbyxrh6grl57mlz2dq";
@@ -60,7 +43,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     string public constant SPECIAL_CID = "bafybeigb7dzwnn3ydaznwhehxkqa3453pfw4gda3wgd6qdxzoiyvt52ctu";
     
     // ============================================
-    // STATE VARIABLES - Variabel Penyimpanan
+    // VARIABEL STATUS
     // ============================================
     
     /// @dev Counter untuk ID token berikutnya
@@ -89,9 +72,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     /// @dev Mapping dari alamat donatur ke array token ID yang dimiliki
     mapping(address => uint256[]) public donorTokens;
     
-    // ============================================
-    // EVENTS - Event untuk tracking
-    // ============================================
+    // KEJADIAN (EVENTS)
     
     /// @dev Event saat NFT sertifikat berhasil di-mint
     event CertificateMinted(
@@ -118,9 +99,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
         _;
     }
     
-    // ============================================
-    // CONSTRUCTOR
-    // ============================================
+    // KONSTRUKTOR
     
     /**
      * @dev Constructor untuk inisialisasi kontrak NFT
@@ -135,7 +114,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     }
     
     // ============================================
-    // ADMIN FUNCTIONS - Fungsi Admin
+    // FUNGSI ADMINISTRATOR
     // ============================================
     
     /**
@@ -261,7 +240,7 @@ contract DonachainNFT is ERC721, ERC721URIStorage, Ownable {
     }
     
     // ============================================
-    // VIEW FUNCTIONS - Fungsi Baca Data
+    // FUNGSI PEMBACAAN DATA (VIEW)
     // ============================================
     
     /**

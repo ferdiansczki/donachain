@@ -558,4 +558,3 @@ window.DonaConfig = {
     VOTING_ABI
 };
 
-console.log('✅ Donachain Config loaded successfully');
