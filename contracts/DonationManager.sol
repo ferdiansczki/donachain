@@ -7,29 +7,16 @@ import "./DonachainNFT.sol";
 
 /**
  * @title DonationManager
- * @dev Kontrak utama untuk mengelola kampanye donasi di platform Donachain
- * 
- * PENJELASAN KONTRAK:
- * Kontrak ini adalah jantung dari platform Donachain yang menangani:
- * 1. Pembuatan dan pengelolaan kampanye donasi dengan deadline
- * 2. Penerimaan donasi dari pengguna
- * 3. Penarikan dana dengan pencatatan pengeluaran otomatis
- * 4. Integrasi dengan DonachainNFT untuk reward sertifikat tiered
- * 
- * @author Donachain Team
+ * @dev Kontrak pengelolaan kampanye donasi, penerimaan dana, dan reward NFT.
  */
 contract DonationManager is Ownable, ReentrancyGuard {
     
-    // ============================================
-    // CONSTANTS - Konstanta
-    // ============================================
+    // KONSTANTA
     
     /// @dev Minimum donasi untuk mendapat NFT sertifikat (0.01 ETH)
     uint256 public constant MIN_DONATION_FOR_NFT = 0.01 ether;
     
-    // ============================================
-    // STATE VARIABLES - Variabel Penyimpanan
-    // ============================================
+    // VARIABEL STATUS
     
     /// @dev Referensi ke kontrak DonachainNFT
     DonachainNFT public nftContract;
@@ -47,23 +34,12 @@ contract DonationManager is Ownable, ReentrancyGuard {
     uint256 public totalExpensesLogged;
     
     // ============================================
-    // STRUCTS - Struktur Data
+    // STRUKTUR DATA
     // ============================================
     
     /**
-     * @dev Struktur data untuk kampanye donasi
-     * 
-     * PENJELASAN FIELD:
-     * - id: Identifier unik kampanye
-     * - title: Judul kampanye (max 100 karakter)
-     * - description: Deskripsi lengkap kampanye
-     * - imageCID: IPFS Content ID untuk gambar kampanye
-     * - targetAmount: Target dana yang ingin dicapai (dalam wei)
-     * - totalRaised: Total dana yang sudah terkumpul
-     * - isActive: Status aktif kampanye (masih menerima donasi)
-     * - createdAt: Timestamp pembuatan kampanye
-     * - deadline: Timestamp batas waktu kampanye
-     * - creator: Alamat pembuat kampanye (admin)
+     * @dev Struktur data untuk representasi kampanye donasi.
+     * Mencakup detail target dana, akumulasi donasi, batas waktu, dan status kampanye.
      */
     struct Campaign {
         uint256 id;
@@ -92,11 +68,8 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Struktur data untuk catatan pengeluaran/penarikan
-     * 
-     * PENJELASAN:
-     * Sekarang expense = withdrawal. Setiap penarikan dana
-     * otomatis tercatat sebagai expense untuk transparansi.
+     * @dev Struktur data untuk pencatatan pengeluaran.
+     * Setiap penarikan dana wajib dicatat sebagai pengeluaran demi transparansi.
      */
     struct Expense {
         uint256 id;
@@ -109,7 +82,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     // ============================================
-    // MAPPINGS - Pemetaan Data
+    // PEMETAAN DATA (MAPPING)
     // ============================================
     
     mapping(uint256 => Campaign) public campaigns;
@@ -123,7 +96,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
     mapping(address => bool) public hasDonated;
     
     // ============================================
-    // EVENTS - Event untuk Tracking
+    // KEJADIAN (EVENTS)
     // ============================================
     
     event CampaignCreated(
@@ -148,10 +121,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
     );
     
     /**
-     * @dev Event saat dana ditarik dengan catatan pengeluaran
-     * 
-     * PENJELASAN:
-     * Event ini menggabungkan ExpenseLogged dan FundsWithdrawn
+     * @dev Kejadian yang dipicu saat dana ditarik beserta catatan pengeluarannya.
      */
     event FundsWithdrawnWithLog(
         uint256 indexed expenseId,
@@ -163,7 +133,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
     );
     
     // ============================================
-    // CONSTRUCTOR
+    // KONSTRUKTOR
     // ============================================
     
     constructor(address initialOwner) Ownable(initialOwner) {
@@ -171,28 +141,15 @@ contract DonationManager is Ownable, ReentrancyGuard {
         _nextExpenseId = 1;
     }
     
-    // ============================================
-    // ADMIN FUNCTIONS - Fungsi Admin
-    // ============================================
+    // FUNGSI ADMINISTRATOR
     
-    /**
-     * @dev Set alamat kontrak NFT
-     * @param _nftContract Alamat kontrak DonachainNFT
-     */
+    /// @dev Menetapkan alamat kontrak NFT sebagai referensi penghargaan.
     function setNFTContract(address _nftContract) external onlyOwner {
         require(_nftContract != address(0), "DonationManager: Alamat tidak valid");
         nftContract = DonachainNFT(_nftContract);
     }
     
-    /**
-     * @dev Buat kampanye donasi baru dengan deadline
-     * @param title Judul kampanye
-     * @param description Deskripsi kampanye
-     * @param imageCID IPFS CID untuk gambar
-     * @param targetAmount Target dana dalam wei
-     * @param deadline Unix timestamp untuk batas waktu
-     * @return campaignId ID kampanye yang baru dibuat
-     */
+    /// @dev Membuat kampanye donasi baru dengan parameter target dan batas waktu.
     function createCampaign(
         string memory title,
         string memory description,
@@ -230,9 +187,9 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Update status aktif kampanye
-     * @param campaignId ID kampanye
-     * @param isActive Status aktif baru
+     * @dev Memperbarui status operasional (aktif/non-aktif) sebuah kampanye.
+     * @param campaignId Identitas unik kampanye.
+     * @param isActive Status operasional yang baru.
      */
     function updateCampaignStatus(uint256 campaignId, bool isActive) external onlyOwner {
         require(campaigns[campaignId].id != 0, "DonationManager: Kampanye tidak ada");
@@ -240,20 +197,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
         emit CampaignUpdated(campaignId, isActive);
     }
     
-    /**
-     * @dev Tarik dana dengan catatan pengeluaran otomatis (MERGED FUNCTION)
-     * @param description Deskripsi pengeluaran
-     * @param recipient Alamat penerima dana
-     * @param amount Jumlah yang ditarik dalam wei
-     * @param campaignId ID kampanye terkait (0 jika general)
-     * 
-     * PENJELASAN:
-     * Fungsi ini menggabungkan logExpense() dan withdrawFunds().
-     * Setiap penarikan dana akan:
-     * 1. Mencatat expense untuk transparansi
-     * 2. Mentransfer dana ke recipient
-     * 3. Emit event untuk tracking
-     */
+    /// @dev Menangani penarikan dana sekaligus pencatatan log pengeluaran otomatis.
     function withdrawWithLog(
         string memory description,
         address payable recipient,
@@ -292,18 +236,10 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     // ============================================
-    // PUBLIC FUNCTIONS - Fungsi Publik
+    // FUNGSI PUBLIK
     // ============================================
     
-    /**
-     * @dev Fungsi utama untuk menerima donasi
-     * @param campaignId ID kampanye yang akan didonasikan
-     * 
-     * PENJELASAN:
-     * 1. Cek kampanye aktif dan belum melewati deadline
-     * 2. Catat donasi
-     * 3. Mint NFT jika >= 0.01 ETH
-     */
+    /// @dev Mengelola penerimaan donasi dan otomatisasi penerbitan NFT pendukung.
     function donate(uint256 campaignId) external payable nonReentrant {
         // Validasi dasar
         require(msg.value > 0, "DonationManager: Donasi harus lebih dari 0");
@@ -361,7 +297,7 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     // ============================================
-    // VIEW FUNCTIONS - Fungsi Baca Data
+    // FUNGSI PEMBACAAN DATA (VIEW)
     // ============================================
     
     function getAllCampaigns() external view returns (Campaign[] memory) {
@@ -373,8 +309,8 @@ contract DonationManager is Ownable, ReentrancyGuard {
     }
     
     /**
-     * @dev Ambil kampanye yang masih aktif DAN belum melewati deadline
-     * @return Array kampanye aktif
+     * @dev Mengambil daftar kampanye yang masih aktif dan belum melewati batas waktu.
+     * @return Array kumpulan kampanye yang berstatus aktif.
      */
     function getActiveCampaigns() external view returns (Campaign[] memory) {
         uint256 activeCount = 0;

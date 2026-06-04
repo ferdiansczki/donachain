@@ -84,13 +84,12 @@
                 <img src="img/donachain.png" alt="Donachain" class="h-10">
             </a>
 
-            <div class="hidden md:flex items-center gap-8">
                 <a href="index.html" class="nav-link font-medium">Beranda</a>
                 <a href="campaigns.html" class="nav-link font-medium">Kampanye</a>
                 <a href="audit.html" class="nav-link font-medium">Transparansi</a>
                 <a href="leaderboard.html" class="nav-link font-medium">Statistik Donatur</a>
                 <a href="about.html" class="nav-link font-medium">Tentang</a>
-            </div>
+                <a href="guide.html" class="nav-link font-medium">Panduan</a>
 
             <div class="flex items-center gap-4">
                 <button id="connect-wallet-btn" class="btn-primary">
@@ -153,6 +152,9 @@
         </a>
         <a href="about.html" class="mobile-nav-link">
             <i class="fas fa-info-circle"></i> Tentang
+        </a>
+        <a href="guide.html" class="mobile-nav-link">
+            <i class="fas fa-book"></i> Panduan
         </a>
     </div>
 
@@ -250,45 +252,42 @@
                 <!-- Withdraw With Log Form (MERGED) -->
                 <div class="glass-card p-6">
                     <h2 class="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                        <i class="fas fa-money-bill-wave" style="color: #ff3746;"></i>
-                        Tarik Dana
+                        <i class="fas fa-hand-holding-heart" style="color: #ff3746;"></i>
+                        Salurkan Dana
                     </h2>
 
                     <form id="withdraw-form" class="space-y-4">
                         <div>
-                            <label class="form-label">Deskripsi Pengeluaran</label>
-                            <input type="text" id="withdraw-description" class="form-input"
-                                placeholder="Contoh: Pembelian selimut untuk korban" required>
-                            <p class="text-gray-500 text-xs mt-1">
-                                Deskripsi ini akan tercatat untuk transparansi
-                            </p>
+                            <label class="form-label">Kampanye Sumber Dana</label>
+                            <select id="withdraw-campaign-id" class="form-input" style="cursor: pointer;">
+                                <option value="" disabled selected>Pilih Kampanye...</option>
+                                <option disabled>Loading campaigns...</option>
+                            </select>
                         </div>
 
                         <div>
-                            <label class="form-label">Alamat Penerima</label>
+                            <label class="form-label">Deskripsi Penyaluran</label>
+                            <input type="text" id="withdraw-description" class="form-input"
+                                placeholder="Contoh: Pembelian obat-obatan" required>
+                        </div>
+
+                        <div>
+                            <label class="form-label">Alamat Penerima Manfaat</label>
                             <input type="text" id="withdraw-recipient" class="form-input font-mono" placeholder="0x..."
                                 required>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="form-label">Jumlah (ETH)</label>
-                                <input type="number" id="withdraw-amount" class="form-input" placeholder="0.5"
-                                    step="0.001" min="0.001" required>
-                            </div>
-                            <div>
-                                <label class="form-label">Kampanye</label>
-                                <select id="withdraw-campaign-id" class="form-input" style="cursor: pointer;">
-                                    <option value="" disabled selected>-</option>
-                                    <option disabled>Loading campaigns...</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="form-label">Saldo Tersedia (ETH)</label>
+                            <input type="number" id="withdraw-amount" class="form-input" placeholder="0.000"
+                                step="any" readonly style="background-color: #f3f4f6; cursor: not-allowed;">
+                            <p class="text-gray-500 text-xs mt-1">Otomatis menggunakan seluruh saldo kampanye</p>
                         </div>
 
                         <button type="submit" class="btn-primary w-full py-3 justify-center"
                             style="background-color: #ff3746; border-color: #ff3746;">
                             <i class="fas fa-paper-plane"></i>
-                            Tarik & Catat Pengeluaran
+                            Salurkan & Catat
                         </button>
                     </form>
 
@@ -298,8 +297,8 @@
                             <div class="text-sm">
                                 <p class="text-blue-600 font-medium">Info</p>
                                 <p class="text-gray-600">
-                                    Fungsi ini akan otomatis mencatat pengeluaran dan mentransfer dana ke penerima
-                                    dalam satu transaksi.
+                                    Fungsi ini akan otomatis menyalurkan dana kampanye dan mencatat pengeluaran
+                                    dalam satu transaksi agar transparan.
                                 </p>
                             </div>
                         </div>

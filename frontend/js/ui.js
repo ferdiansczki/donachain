@@ -1,35 +1,10 @@
 /**
- * @file ui.js
- * @description Modul untuk manipulasi DOM dan update tampilan UI
- * 
- * FILE INI MENANGANI:
- * 1. Render komponen UI (cards, tables, modals)
- * 2. Update navbar berdasarkan status wallet
- * 3. Tampilkan success/error messages dengan SweetAlert2
- * 4. Format dan display data dari blockchain
- * 
- * DEPENDENCY:
- * - config.js (konfigurasi)
- * - wallet.js (status wallet)
- * - SweetAlert2 (dari CDN)
- * 
- * @author Donachain Team
+ * Modul antarmuka pengguna: manipulasi DOM, render komponen, dan integrasi tampilan data.
  */
 
-// ============================================
-// NAVBAR UI - Update Navbar
-// ============================================
+// Pembaruan Navigasi
 
-/**
- * Update tampilan navbar berdasarkan status wallet
- * 
- * @param {boolean} isConnected - Status koneksi wallet
- * @param {string} address - Alamat wallet (jika terkoneksi)
- * 
- * PENJELASAN:
- * - Jika belum terkoneksi: Tampilkan tombol "Connect Wallet"
- * - Jika terkoneksi: Tampilkan alamat wallet dan dropdown menu
- */
+// Update navbar berdasarkan status dompet (terhubung/terputus)
 function updateWalletUI(isConnected, address) {
     const connectBtn = document.getElementById('connect-wallet-btn');
     const walletInfo = document.getElementById('wallet-info');
@@ -57,9 +32,9 @@ function updateWalletUI(isConnected, address) {
 }
 
 /**
- * Tampilkan/sembunyikan menu admin
+ * Mengatur visibilitas menu administrasi.
  * 
- * @param {string} address - Alamat wallet
+ * @param {string} address - Alamat dompet pengguna.
  */
 function updateAdminMenuVisibility(address) {
     const adminLink = document.getElementById('admin-link');
@@ -73,7 +48,7 @@ function updateAdminMenuVisibility(address) {
 }
 
 /**
- * Toggle dropdown menu di navbar
+ * Mengaktifkan atau menonaktifkan menu tarik-turun pada bilah navigasi.
  */
 function toggleDropdown() {
     const dropdown = document.getElementById('wallet-dropdown');
@@ -82,13 +57,11 @@ function toggleDropdown() {
     }
 }
 
-// ============================================
-// MOBILE MENU - Hamburger Navigation
-// ============================================
 
-/**
- * Toggle mobile menu open/close
- */
+// MENU SELULER
+
+
+// Menangani buka-tutup menu seluler (hamburger)
 function toggleMobileMenu() {
     const hamburger = document.getElementById('hamburger-btn');
     const mobileMenu = document.getElementById('mobile-menu');
@@ -114,8 +87,8 @@ function toggleMobileMenu() {
 }
 
 /**
- * Initialize mobile menu event listeners
- * Should be called on DOMContentLoaded
+ * Menginisialisasi pendengar kejadian untuk menu seluler.
+ * Sebaiknya dipanggil saat kejadian DOMContentLoaded dipicu.
  */
 function initMobileMenu() {
     const hamburger = document.getElementById('hamburger-btn');
@@ -150,23 +123,9 @@ function initMobileMenu() {
     });
 }
 
-// ============================================
-// CAMPAIGN UI - Render Kampanye
-// ============================================
+// Fungsi Render Kampanye
 
-/**
- * Render grid kampanye di homepage
- * 
- * @param {Array} campaigns - Array data kampanye
- * @param {string} containerId - ID container element
- * 
- * PENJELASAN:
- * Membuat card untuk setiap kampanye dengan:
- * - Gambar kampanye
- * - Judul
- * - Progress bar
- * - Info raised/target
- */
+// Render kartu kampanye ke dalam antarmuka grid
 function renderCampaignCards(campaigns, containerId = 'campaign-grid') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -235,9 +194,9 @@ function renderCampaignCards(campaigns, containerId = 'campaign-grid') {
 }
 
 /**
- * Render detail kampanye di halaman detail
+ * Menampilkan informasi detail kampanye pada halaman spesifik.
  * 
- * @param {object} campaign - Data kampanye
+ * @param {object} campaign - Objek data kampanye.
  */
 function renderCampaignDetail(campaign) {
     // Update judul
@@ -296,16 +255,11 @@ function renderCampaignDetail(campaign) {
     if (dateEl) dateEl.textContent = campaign.createdDate;
 }
 
-// ============================================
-// STATISTIK DONATUR UI - Render Statistik Donatur
-// ============================================
 
-/**
- * Render tabel leaderboard top donatur
- * 
- * @param {Array} leaderboard - Array data leaderboard
- * @param {string} containerId - ID container element
- */
+// STATISTIK DONATUR
+
+
+// Menampilkan tabel peringkat donatur terbanyak
 function renderLeaderboard(leaderboard, containerId = 'leaderboard-table') {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -322,12 +276,18 @@ function renderLeaderboard(leaderboard, containerId = 'leaderboard-table') {
     }
 
     container.innerHTML = leaderboard.map((donor, index) => {
-        // Badge untuk top 3
+        const rank = index + 1;
+        // Peringkat dengan ikon untuk tiga besar
         let rankBadge = '';
-        if (index === 0) rankBadge = '🥇';
-        else if (index === 1) rankBadge = '🥈';
-        else if (index === 2) rankBadge = '🥉';
-        else rankBadge = `#${index + 1}`;
+        if (rank === 1) {
+            rankBadge = '<span class="text-yellow-400 text-xl"><i class="fas fa-trophy"></i></span>';
+        } else if (rank === 2) {
+            rankBadge = '<span class="text-gray-300 text-xl"><i class="fas fa-trophy"></i></span>';
+        } else if (rank === 3) {
+            rankBadge = '<span class="text-amber-600 text-xl"><i class="fas fa-trophy"></i></span>';
+        } else {
+            rankBadge = `<span class="text-gray-400 font-bold">#${rank}</span>`;
+        }
 
         return `
             <tr class="border-b border-gray-100 hover:bg-blue-50 transition-colors">
@@ -353,16 +313,16 @@ function renderLeaderboard(leaderboard, containerId = 'leaderboard-table') {
     }).join('');
 }
 
-// ============================================
-// DONATION FEED UI - Render Live Feed
-// ============================================
+
+// RIWAYAT DONASI TERKINI
+
 
 /**
- * Render live donation feed
+ * Menampilkan umpan langsung (live feed) donasi terbaru.
  * 
- * @param {Array} donations - Array data donasi
- * @param {string} containerId - ID container element
- * @param {number} limit - Jumlah donasi yang ditampilkan
+ * @param {Array} donations - Kumpulan data donasi.
+ * @param {string} containerId - ID elemen penampung umpan.
+ * @param {number} limit - Batas jumlah donasi yang ditampilkan.
  */
 function renderDonationFeed(donations, containerId = 'donation-feed', limit = 10) {
     const container = document.getElementById(containerId);
@@ -396,7 +356,7 @@ function renderDonationFeed(donations, containerId = 'donation-feed', limit = 10
                        class="text-blue-600 hover:text-blue-800 font-mono text-sm truncate font-medium">
                         ${donation.donorShort}
                     </a>
-                    ${donation.nftMinted ? '<span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded">🏆 NFT</span>' : ''}
+                    ${donation.nftMinted ? '<span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-0.5 rounded">Sertifikat NFT</span>' : ''}
                 </div>
                 <p class="text-gray-500 text-xs">${donation.timeAgo}</p>
             </div>
@@ -412,16 +372,16 @@ function renderDonationFeed(donations, containerId = 'donation-feed', limit = 10
     `).join('');
 }
 
-// ============================================
-// AUDIT TABLES UI - Tabel Audit
-// ============================================
+
+// TABEL AUDIT
+
 
 /**
- * Render tabel dana masuk untuk halaman audit
+ * Menampilkan tabel dana masuk untuk keperluan transparansi audit.
  * 
- * @param {Array} donations - Array data donasi
- * @param {string} containerId - ID container element
- * @param {Array} campaigns - Array data kampanye untuk lookup judul
+ * @param {Array} donations - Kumpulan data donasi masuk.
+ * @param {string} containerId - ID elemen penampung tabel.
+ * @param {Array} campaigns - Daftar kampanye untuk tujuan identifikasi judul.
  */
 function renderIncomingFundsTable(donations, containerId = 'incoming-funds-table', campaigns = []) {
     const container = document.getElementById(containerId);
@@ -501,11 +461,11 @@ function renderIncomingFundsTable(donations, containerId = 'incoming-funds-table
 }
 
 /**
- * Render tabel dana keluar untuk halaman audit
+ * Menampilkan tabel dana keluar untuk keperluan transparansi audit.
  * 
- * @param {Array} expenses - Array data pengeluaran
- * @param {string} containerId - ID container element
- * @param {Array} campaigns - Array data kampanye untuk lookup judul
+ * @param {Array} expenses - Kumpulan data pengeluaran dana.
+ * @param {string} containerId - ID elemen penampung tabel.
+ * @param {Array} campaigns - Daftar kampanye untuk tujuan identifikasi judul.
  */
 function renderOutgoingFundsTable(expenses, containerId = 'outgoing-funds-table', campaigns = []) {
     const container = document.getElementById(containerId);
@@ -567,15 +527,15 @@ function renderOutgoingFundsTable(expenses, containerId = 'outgoing-funds-table'
     }).join('');
 }
 
-// ============================================
-// NFT GALLERY UI - Gallery NFT
-// ============================================
+
+// GALERI NFT
+
 
 /**
- * Render gallery NFT di halaman profil
+ * Menampilkan galeri berkas NFT pada profil pengguna.
  * 
- * @param {Array} nfts - Array data NFT
- * @param {string} containerId - ID container element
+ * @param {Array} nfts - Kumpulan data sertifikat NFT.
+ * @param {string} containerId - ID elemen penampung galeri.
  */
 function renderNFTGallery(nfts, containerId = 'nft-gallery') {
     const container = document.getElementById(containerId);
@@ -655,10 +615,10 @@ function renderNFTGallery(nfts, containerId = 'nft-gallery') {
 }
 
 /**
- * Render tabel riwayat donasi di halaman profil
+ * Menampilkan tabel riwayat donasi pada profil pengguna.
  * 
- * @param {Array} donations - Array data donasi
- * @param {string} containerId - ID container element
+ * @param {Array} donations - Kumpulan data riwayat donasi.
+ * @param {string} containerId - ID elemen penampung tabel.
  */
 function renderDonationHistory(donations, containerId = 'donation-history-table', campaigns = [], page = 1, itemsPerPage = 5) {
     const container = document.getElementById(containerId);
@@ -771,14 +731,14 @@ function renderDonationHistory(donations, containerId = 'donation-history-table'
     }
 }
 
-// ============================================
-// STATS UI - Render Statistik
-// ============================================
+
+// STATISTIK PLATFORM
+
 
 /**
- * Render statistik transparansi di homepage
+ * Menampilkan statistik transparansi pada halaman utama.
  * 
- * @param {object} stats - Data statistik dari kontrak
+ * @param {object} stats - Objek data statistik yang bersumber dari kontrak.
  */
 function renderTransparencyStats(stats) {
     // Total dana tersalurkan
@@ -822,12 +782,11 @@ function updateContractLinks() {
         link.href = contractUrl;
     });
 
-    console.log('🔗 Link smart contract diupdate ke:', config.DONATION_MANAGER_ADDRESS);
 }
 
-// ============================================
+
 // SWEETALERT2 MODALS - Pop-up Messages
-// ============================================
+
 
 /**
  * Tampilkan modal sukses donasi
@@ -981,9 +940,9 @@ async function showConfirm(title, message) {
     return result.isConfirmed;
 }
 
-// ============================================
+
 // PDF GENERATION - Cetak Sertifikat
-// ============================================
+
 
 /**
  * Download sertifikat donasi sebagai PDF
@@ -1251,9 +1210,9 @@ function loadImageToBase64(url) {
     });
 }
 
-// ============================================
+
 // ADMIN UI - Render Admin Panel
-// ============================================
+
 
 /**
  * Render tabel kampanye di admin panel
@@ -1316,9 +1275,9 @@ function renderAdminCampaignTable(campaigns, containerId = 'admin-campaign-table
     `).join('');
 }
 
-// ============================================
+
 // EXPORT FUNCTIONS
-// ============================================
+
 
 window.DonaUI = {
     // Navbar
@@ -1370,4 +1329,3 @@ window.DonaUI = {
     updateContractLinks
 };
 
-console.log('✅ Donachain UI module loaded successfully');
